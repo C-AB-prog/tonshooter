@@ -1,0 +1,17 @@
+{
+  "name": "ton-shooter-miniapp",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm --workspace apps/api run dev & npm --workspace apps/web run dev",
+    "dev:api": "npm --workspace apps/api run dev",
+    "dev:web": "npm --workspace apps/web run dev",
+    "dev:bot": "npm --workspace apps/bot run dev",
+    "build": "npm --workspace apps/api run build && npm --workspace apps/web run build",
+    "lint": "npm --workspace apps/api run lint && npm --workspace apps/web run lint",
+    "format": "npm --workspace apps/api run format && npm --workspace apps/web run format",
+    "postinstall": "npx prisma generate --schema apps/api/prisma/schema.prisma"
+  }
+}

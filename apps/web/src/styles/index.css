@@ -1,0 +1,108 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
+:root{
+  --bg: #f3f5f9;
+  --card: #ffffff;
+  --muted: #a0a7b4;
+  --text: #1b2430;
+  --stroke: rgba(0,0,0,0.06);
+
+  --blue: #2f6eea;
+  --blue2: #347cff;
+  --green: #21c16b;
+  --green2: #5eeaa2;
+
+  --radius: 16px;
+  --shadow: 0 8px 28px rgba(17, 24, 39, 0.12);
+}
+
+*{ box-sizing: border-box; }
+html, body { height: 100%; margin: 0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: var(--bg); color: var(--text); }
+button{ font-family: inherit; }
+
+a{ color: inherit; text-decoration: none; }
+
+.safe{ padding: 16px; padding-bottom: 90px; max-width: 420px; margin: 0 auto; }
+
+.card{
+  background: var(--card);
+  border: 1px solid var(--stroke);
+  border-radius: var(--radius);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+}
+
+.row{ display:flex; gap: 12px; }
+.col{ display:flex; flex-direction: column; gap: 12px; }
+
+.h1{ font-size: 22px; font-weight: 700; margin: 0; }
+.h2{ font-size: 18px; font-weight: 700; margin: 0; }
+
+.muted{ color: var(--muted); }
+
+.btn{
+  border: 0;
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.btn:disabled{ opacity: 0.5; cursor: not-allowed; }
+
+.btnPrimary{
+  background: linear-gradient(180deg, var(--blue2), var(--blue));
+  color: white;
+  box-shadow: 0 8px 18px rgba(47,110,234,0.26);
+}
+
+.btnGreen{
+  background: linear-gradient(180deg, var(--green2), var(--green));
+  color: white;
+  box-shadow: 0 8px 18px rgba(33,193,107,0.26);
+}
+
+.pill{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--stroke);
+  background: rgba(255,255,255,0.7);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.bottomNav{
+  position: fixed;
+  left: 0; right: 0; bottom: 0;
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid var(--stroke);
+  display: flex;
+  justify-content: center;
+  padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+}
+.bottomNavInner{
+  width: min(420px, 100%);
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+.navItem{
+  display:flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 6px;
+  border-radius: 12px;
+  font-size: 11px;
+  color: #6b778a;
+}
+.navItemActive{
+  color: var(--blue);
+  background: rgba(47,110,234,0.10);
+}
+.navIcon{
+  width: 22px; height: 22px;
+  display:grid; place-items:center;
+}
