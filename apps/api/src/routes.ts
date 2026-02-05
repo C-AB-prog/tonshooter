@@ -315,7 +315,11 @@ router.post("/admin/tasks/deactivate", requireAuth, async (req, res) => {
 
   const schema = z.object({ taskId: z.string().min(1), isActive: z.boolean() });
   const { taskId, isActive } = schema.parse(req.body);
+
   await prisma.task.update({ where: { id: taskId }, data: { isActive } });
+  return res.json({ ok: true });
+});
+
  /**
  * TON purchases (real, via TonConnect)
  *
@@ -334,18 +338,23 @@ function toncenterBaseUrl(): string {
     : "https://testnet.toncenter.com/api/v3";
 }
 
-async function toncenterFetch(path: string, params: Record<string, string | number | boolean>) {
+async function toncenterFetch<T = any>(
+  path: string,
+  params: Record<string, string | number | boolean>
+): Promise<T> {
   const url = new URL(toncenterBaseUrl() + path);
   Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, String(v)));
   const headers: Record<string, string> = {};
   if (config.toncenterApiKey) headers["X-Api-Key"] = config.toncenterApiKey;
+
   const resp = await fetch(url.toString(), { headers });
   if (!resp.ok) {
     const txt = await resp.text().catch(() => "");
     throw new Error(`toncenter_${resp.status}: ${txt.slice(0, 200)}`);
   }
-  return resp.json();
+  return (await resp.json()) as T;
 }
+
 
 function tonToNanoStr(ton: number): string {
   // 1 TON = 1e9 nanotons
@@ -506,8 +515,13 @@ router.post("/ton/purchase/confirm", requireAuth, async (req, res) => {
   }
 
   // Scan last transactions of receiver account in TON Center v3
-  const data = await toncenterFetch("/transactions", { account: purchase.receiver, limit: 25, sort: "desc" });
-  const txs = (data?.transactions ?? []) as any[];
+  const data = await toncenterFetch<{ transactions?: any[] }>("/transactions", {
+  account: purchase.receiver,
+  limit: 25,
+  sort: "desc",
+});
+  const txs = data.transactions ?? [];
+  
 
   const expectedValue = purchase.amountNano.toString();
   const expectedComment = purchase.comment;
@@ -589,8 +603,6 @@ router.post("/ton/purchase/confirm", requireAuth, async (req, res) => {
   });
 });
 
- return res.json({ ok: true });
-});
 
 /**
  * DEV: mock TON purchase flow
@@ -645,7 +657,7 @@ router.post("/ton/purchase/mock", requireAuth, async (req, res) => {
 
   if (purchase === "upgrade_weapon_5") {
     if (user.weaponLevel !== 4) return res.status(409).json({ error: "invalid_level", message: "weapon must be level 4" });
-    const check = canUpgrade(user.weaponLevel + 1, user.rangeLevel);
+    const check = canUpgrade(user.weaponLevel + 1, user.rangeLevel, "weapon");
     if (!check.ok) return res.status(409).json({ error: "upgrade_blocked", reason: check.reason });
 
     const updated = await prisma.user.update({ where: { id: uid }, data: { weaponLevel: 5 } });
@@ -656,7 +668,7 @@ router.post("/ton/purchase/mock", requireAuth, async (req, res) => {
 
   if (purchase === "upgrade_range_5") {
     if (user.rangeLevel !== 4) return res.status(409).json({ error: "invalid_level", message: "range must be level 4" });
-    const check = canUpgrade(user.weaponLevel, user.rangeLevel + 1);
+    const check = canUpgrade(user.weaponLevel, user.rangeLevel + 1, "range");
     if (!check.ok) return res.status(409).json({ error: "upgrade_blocked", reason: check.reason });
 
     const updated = await prisma.user.update({ where: { id: uid }, data: { rangeLevel: 5 } });
@@ -1078,16 +1090,15 @@ router.post("/tasks/open", requireAuth, async (req, res) => {
   const { uid } = (req as AuthedRequest).auth;
   const now = new Date();
 
-  const schema = z.object({ taskId: z.string().min(1), openToken: z.string().min(1) });
-  const { taskId, openToken } = schema.parse(req.body);
+  const schema = z.object({ taskId: z.string().min(1) });
+  const { taskId } = schema.parse(req.body);
 
   const task = await prisma.task.findUnique({ where: { id: taskId } });
   if (!task || !task.isActive) return res.status(404).json({ error: "task_not_found" });
 
   const openToken = randomUUID();
-  const openTokenExpiresAt = new Date(now.getTime() + 15 * 60 * 1000);
+  const openTokenExpiresAt = new Date(now.getTime() + 15 * 60 * 1000); // 15 минут
 
-  // idempotent: refresh token each time (so "must click link before claim" works)
   await prisma.taskOpen.upsert({
     where: { userId_taskId: { userId: uid, taskId } },
     update: { openedAt: now, openToken, openTokenExpiresAt },
@@ -1101,12 +1112,17 @@ router.post("/tasks/open", requireAuth, async (req, res) => {
   });
 });
 
+
+// Claim task reward (requires prior /tasks/open -> openToken)
 router.post("/tasks/claim", requireAuth, async (req, res) => {
   const { uid, tgUserId } = (req as AuthedRequest).auth;
   const now = new Date();
 
-  const schema = z.object({ taskId: z.string().min(1) });
-  const { taskId } = schema.parse(req.body);
+  const schema = z.object({
+    taskId: z.string().min(1),
+    openToken: z.string().uuid(),
+  });
+  const { taskId, openToken } = schema.parse(req.body);
 
   const ab = await antibotCheckAndMaybeFlag(uid, "task_claim", now);
   if (ab.blocked) return res.status(403).json({ error: "bot_suspected" });
@@ -1114,77 +1130,99 @@ router.post("/tasks/claim", requireAuth, async (req, res) => {
   const task = await prisma.task.findUnique({ where: { id: taskId } });
   if (!task || !task.isActive) return res.status(404).json({ error: "task_not_found" });
 
-  // Must open first
-  const opened = await prisma.taskOpen.findUnique({ where: { userId_taskId: { userId: uid, taskId } } });
+  // Must open first (fast pre-check)
+  const opened = await prisma.taskOpen.findUnique({
+    where: { userId_taskId: { userId: uid, taskId } },
+  });
 
-if (!opened) return res.status(409).json({ error: "need_open_first" });
-if (!opened.openToken || opened.openToken !== openToken) return res.status(409).json({ error: "need_open_first" });
-if (opened.openTokenExpiresAt && opened.openTokenExpiresAt.getTime() < Date.now()) {
-  return res.status(409).json({ error: "need_open_first" });
-}
-
-
-  // Cap check (0 = unlimited)
-  if (task.cap > 0 && task.completedCount >= task.cap) {
-    // Auto-disable (best-effort)
-    await prisma.task.update({ where: { id: taskId }, data: { isActive: false } }).catch(() => undefined);
-    return res.status(409).json({ error: "task_limit_reached" });
+  if (!opened) return res.status(409).json({ error: "need_open_first" });
+  if (!opened.openToken || opened.openToken !== openToken) return res.status(409).json({ error: "need_open_first" });
+  if (opened.openTokenExpiresAt && opened.openTokenExpiresAt.getTime() < Date.now()) {
+    return res.status(409).json({ error: "need_open_first" });
   }
 
-  const already = await prisma.taskClaim.findUnique({ where: { userId_taskId: { userId: uid, taskId } } });
+  // One user — one reward
+  const already = await prisma.taskClaim.findUnique({
+    where: { userId_taskId: { userId: uid, taskId } },
+  });
   if (already) return res.status(409).json({ error: "already_claimed" });
 
+  // If required — check Telegram subscription
   if (task.requireSubscriptionCheck) {
     const isMember = await checkChatMember(task.chatId, tgUserId.toString(), config.botToken);
     if (!isMember) return res.status(409).json({ error: "not_subscribed" });
   }
 
-  let updated: any;
   try {
-    updated = await prisma.$transaction(async (tx) => {
-      // re-check inside transaction
-      const current = await tx.task.findUnique({ where: { id: taskId } });
-      if (!current || !current.isActive) throw new Error("task_not_found");
-      if (current.cap > 0 && current.completedCount >= current.cap) {
+    const updatedUser = await prisma.$transaction(async (tx) => {
+      // Re-check inside transaction (race-safe)
+      const [t, o, c] = await Promise.all([
+        tx.task.findUnique({ where: { id: taskId } }),
+        tx.taskOpen.findUnique({ where: { userId_taskId: { userId: uid, taskId } } }),
+        tx.taskClaim.findUnique({ where: { userId_taskId: { userId: uid, taskId } } }),
+      ]);
+
+      if (!t || !t.isActive) throw new Error("task_not_found");
+      if (c) throw new Error("already_claimed");
+
+      if (!o || !o.openToken || o.openToken !== openToken) throw new Error("need_open_first");
+      if (o.openTokenExpiresAt && o.openTokenExpiresAt.getTime() < Date.now()) throw new Error("need_open_first");
+
+      // Cap check (0 = unlimited)
+      if (t.cap > 0 && t.completedCount >= t.cap) {
+        // auto-disable (best-effort)
         await tx.task.update({ where: { id: taskId }, data: { isActive: false } }).catch(() => undefined);
         throw new Error("task_limit_reached");
       }
 
+      // Create claim
       await tx.taskClaim.create({ data: { userId: uid, taskId } });
 
-      const nextCompleted = current.completedCount + 1;
+      // Increment completedCount + auto-disable if reached cap
+      const nextCompleted = t.completedCount + 1;
       await tx.task.update({
         where: { id: taskId },
         data: {
           completedCount: { increment: 1 },
-          ...(current.cap > 0 && nextCompleted >= current.cap ? { isActive: false } : {}),
+          ...(t.cap > 0 && nextCompleted >= t.cap ? { isActive: false } : {}),
         },
       });
 
+      // One-time openToken: invalidate after successful claim
+      await tx.taskOpen.update({
+        where: { userId_taskId: { userId: uid, taskId } },
+        data: { openToken: null, openTokenExpiresAt: null },
+      });
+
+      // Award reward
       const u = await tx.user.update({
         where: { id: uid },
         data:
-          current.rewardType === RewardType.COINS
-            ? { coins: { increment: BigInt(current.rewardValue) } }
-            : { crystals: { increment: BigInt(current.rewardValue) } },
+          t.rewardType === RewardType.COINS
+            ? { coins: { increment: BigInt(t.rewardValue) } }
+            : { crystals: { increment: BigInt(t.rewardValue) } },
       });
+
       return u;
+    });
+
+    await logAction(uid, "task_claim", { taskId });
+
+    return res.json({
+      ok: true,
+      coins: updatedUser.coins.toString(),
+      crystals: updatedUser.crystals.toString(),
     });
   } catch (e: any) {
     const msg = String(e?.message ?? "");
     if (msg === "task_limit_reached") return res.status(409).json({ error: "task_limit_reached" });
     if (msg === "task_not_found") return res.status(404).json({ error: "task_not_found" });
+    if (msg === "already_claimed") return res.status(409).json({ error: "already_claimed" });
+    if (msg === "need_open_first") return res.status(409).json({ error: "need_open_first" });
     throw e;
   }
-
-  await logAction(uid, "task_claim", { taskId });
-
-  return res.json({
-    ok: true,
-    coins: updated.coins.toString(),
-    crystals: updated.crystals.toString(),
-  });
 });
+
 
 /**
  * Withdraw TON

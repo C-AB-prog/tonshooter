@@ -115,6 +115,8 @@ export default function Shoot() {
   }, [session]);
 
   if (!user || !token) return null;
+  const tok = token;
+  const u = user;
 
   async function startAttempt() {
     setBusy(true);
@@ -157,7 +159,7 @@ export default function Shoot() {
       if (getTonPayMode() === "mock") {
         await apiFetch("/ton/purchase/mock", { token, body: { purchase: "boost" } });
       } else {
-        await tonConnectPay("boost", token);
+        await tonConnectPay("boost", tok);
       }
       await refresh();
       setBusy(false);

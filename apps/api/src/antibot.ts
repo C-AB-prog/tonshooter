@@ -8,9 +8,15 @@ export type ActionType =
   | "upgrade"
   | "exchange"
   | "boost"
+  | "task_open"
   | "task_claim"
   | "withdraw"
-  | "admin_energy_fill";
+  | "admin_energy_fill"
+  | "admin_grant"
+  | "ton_purchase_paid"
+  | "ton_payment_mock"
+  | "referral_reward";
+
 
 export async function logAction(userId: string, type: ActionType, meta?: any) {
   await prisma.actionLog.create({

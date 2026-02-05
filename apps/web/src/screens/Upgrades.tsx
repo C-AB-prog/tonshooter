@@ -25,10 +25,11 @@ export default function Upgrades() {
   const [overlay, setOverlay] = useState<{ title: string; text: string } | null>(null);
   const [pendingTon, setPendingTon] = useState<null | { which: "weapon" | "range" }>(null);
   if (!user || !token) return null;
-
-  async function upgrade(which: "weapon" | "range") {
+  const tok = token;
+  const u = user;
+    async function upgrade(which: "weapon" | "range") {
     try {
-      const next = which === "weapon" ? user.weaponLevel + 1 : user.rangeLevel + 1;
+      const next = which === "weapon" ? u.weaponLevel + 1 : u.rangeLevel + 1;
 
       // Level 5 is a TON purchase (real payment). For now we show a mock payment modal.
       if (next === 5) {
@@ -65,7 +66,7 @@ export default function Upgrades() {
       if (getTonPayMode() === "mock") {
       await apiFetch("/ton/purchase/mock", { token, body: { purchase } });
     } else {
-      await tonConnectPay(purchase as any, token);
+      await tonConnectPay(purchase as any, tok);
     }
       await refresh();
       setOverlay({ title: "Готово", text: getTonPayMode() === "mock" ? "Улучшение куплено (mock)." : "Улучшение куплено за TON." });
