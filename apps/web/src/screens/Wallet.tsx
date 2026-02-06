@@ -8,9 +8,13 @@ function fmtBig(s: string) {
   return BigInt(s).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 }
 
-function clampInt(n: number, min: number, max: number) {
-  if (!Number.isFinite(n)) return min;
-  return Math.max(min, Math.min(max, Math.trunc(n)));
+function parsePositiveInt(s: string): number | null {
+  if (!s.trim()) return null;
+  const n = Number(s);
+  if (!Number.isFinite(n)) return null;
+  const t = Math.trunc(n);
+  if (t < 1) return null;
+  return t;
 }
 
 export default function Wallet() {
@@ -18,19 +22,20 @@ export default function Wallet() {
   const { user, token, refresh } = useSession();
   const [overlay, setOverlay] = useState<{ title: string; text: string } | null>(null);
 
-  const [coinsToCrystals, setCoinsToCrystals] = useState(1);
-  const [crystalsToTon, setCrystalsToTon] = useState(1);
+  // string inputs (so user can clear)
+  const [coinsToCrystalsStr, setCoinsToCrystalsStr] = useState("1");
+  const [crystalsToTonStr, setCrystalsToTonStr] = useState("1");
 
-  const [withdrawAmount, setWithdrawAmount] = useState(1);
+  const [withdrawAmount, setWithdrawAmount] = useState("1");
   const [withdrawAddr, setWithdrawAddr] = useState("");
 
   if (!user || !token) return null;
 
-  const coinsNeed = useMemo(() => BigInt(coinsToCrystals) * 100000n, [coinsToCrystals]);
-  const crystalsNeed = useMemo(() => BigInt(crystalsToTon) * 100n, [crystalsToTon]);
+  const coinsToCrystals = parsePositiveInt(coinsToCrystalsStr) ?? 0;
+  const crystalsToTon = parsePositiveInt(crystalsToTonStr) ?? 0;
 
-  const boostCooldown = user.boostCooldownUntil ? new Date(user.boostCooldownUntil).getTime() : 0;
-  const boostReady = boostCooldown <= Date.now();
+  const coinsNeed = useMemo(() => BigInt(coinsToCrystals || 0) * 100000n, [coinsToCrystals]);
+  const crystalsNeed = useMemo(() => BigInt(crystalsToTon || 0) * 100n, [crystalsToTon]);
 
   async function exchange(direction: "coins_to_crystals" | "crystals_to_ton", amount: number) {
     try {
@@ -43,22 +48,10 @@ export default function Wallet() {
     }
   }
 
-  async function buyBoostMock() {
-    try {
-      await apiFetch("/ton/purchase/mock", { token, body: { purchase: "boost" } });
-      await refresh();
-      setOverlay({ title: "Готово", text: "Энергия 100." });
-    } catch (e: any) {
-      const code = e?.code;
-      if (code === "boost_cooldown") setOverlay({ title: "Кулдаун", text: "Буст раз в 6 часов." });
-      else if (code === "mock_disabled") setOverlay({ title: "Отключено", text: "Mock выключен." });
-      else setOverlay({ title: "Ошибка", text: code ?? "boost_buy_failed" });
-    }
-  }
-
   async function withdraw() {
+    const amt = Number(withdrawAmount);
     try {
-      await apiFetch("/withdraw", { token, body: { amountTon: withdrawAmount, address: withdrawAddr } });
+      await apiFetch("/withdraw", { token, body: { amountTon: amt, address: withdrawAddr } });
       await refresh();
       setOverlay({ title: "Заявка создана", text: "Вывод в очереди." });
     } catch (e: any) {
@@ -86,39 +79,30 @@ export default function Wallet() {
 
   return (
     <div className="safe col">
-      <h1 className="h1">Кошелёк</h1>
+      <div className="h1">Кошелёк</div>
 
       <div className="card" style={{ padding: 14 }}>
         <div className="balanceRow">
           <div className="balanceItem">🪙 {fmtBig(user.coins)}</div>
           <div className="balanceItem">💎 {fmtBig(user.crystals)}</div>
           <div className="balanceItem">🔷 {user.tonBalance}</div>
-          <div className="balanceItem">⚡ {user.energy}/{user.energyMax}</div>
         </div>
-      </div>
-
-      <div className="card" style={{ padding: 14 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
-          <div style={{ fontWeight: 900, fontSize: 18 }}>Буст</div>
-          <span className="pill">{boostReady ? "✅" : "⏳"}</span>
-        </div>
-        <button className="btn btnPrimary" style={{ width: "100%", marginTop: 12 }} disabled={!boostReady} onClick={() => setOverlay({ title: "Оплата TON", text: "Пока симуляция." })}>
-          Купить • 🔷 1 TON
-        </button>
       </div>
 
       <div className="card" style={{ padding: 14 }}>
         <div style={{ fontWeight: 900, fontSize: 18 }}>Coins → Crystals</div>
-        <div className="muted" style={{ marginTop: 6, fontWeight: 800, fontSize: 12 }}>Нужно: {fmtBig(coinsNeed.toString())}</div>
+        <div className="muted" style={{ marginTop: 6, fontWeight: 800, fontSize: 12 }}>
+          Нужно: {coinsToCrystals ? fmtBig(coinsNeed.toString()) : "—"}
+        </div>
         <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
           <input
-            value={coinsToCrystals}
-            onChange={(e) => setCoinsToCrystals(clampInt(Number(e.target.value || 1), 1, 1_000_000))}
+            value={coinsToCrystalsStr}
+            onChange={(e) => setCoinsToCrystalsStr(e.target.value)}
             style={{ ...inputStyle, flex: 1 }}
-            type="number"
-            min={1}
+            inputMode="numeric"
+            placeholder="сколько crystals"
           />
-          <button className="btn btnGreen" onClick={() => exchange("coins_to_crystals", coinsToCrystals)}>
+          <button className="btn btnGreen" disabled={!coinsToCrystals} onClick={() => exchange("coins_to_crystals", coinsToCrystals)}>
             Обмен
           </button>
         </div>
@@ -126,16 +110,18 @@ export default function Wallet() {
 
       <div className="card" style={{ padding: 14 }}>
         <div style={{ fontWeight: 900, fontSize: 18 }}>Crystals → TON</div>
-        <div className="muted" style={{ marginTop: 6, fontWeight: 800, fontSize: 12 }}>Нужно: {fmtBig(crystalsNeed.toString())}</div>
+        <div className="muted" style={{ marginTop: 6, fontWeight: 800, fontSize: 12 }}>
+          Нужно: {crystalsToTon ? fmtBig(crystalsNeed.toString()) : "—"}
+        </div>
         <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
           <input
-            value={crystalsToTon}
-            onChange={(e) => setCrystalsToTon(clampInt(Number(e.target.value || 1), 1, 1_000_000))}
+            value={crystalsToTonStr}
+            onChange={(e) => setCrystalsToTonStr(e.target.value)}
             style={{ ...inputStyle, flex: 1 }}
-            type="number"
-            min={1}
+            inputMode="numeric"
+            placeholder="сколько TON"
           />
-          <button className="btn btnGreen" onClick={() => exchange("crystals_to_ton", crystalsToTon)}>
+          <button className="btn btnGreen" disabled={!crystalsToTon} onClick={() => exchange("crystals_to_ton", crystalsToTon)}>
             Обмен
           </button>
         </div>
@@ -148,20 +134,27 @@ export default function Wallet() {
         </div>
 
         {locked ? (
-          <button className="btn btnSoft" style={{ width: "100%", marginTop: 12 }} onClick={() => nav("/profile")}>
-            Рефералка
-          </button>
+          <div className="notice" style={{ marginTop: 12 }}>
+            Вывод закрыт: нужен <b>1 активный реферал</b>.
+            <div style={{ marginTop: 10 }}>
+              <button className="btn btnSoft" style={{ width: "100%" }} onClick={() => nav("/profile")}>
+                Открыть рефералку
+              </button>
+            </div>
+          </div>
         ) : (
           <>
+            <div className="muted" style={{ marginTop: 6, fontWeight: 800, fontSize: 12 }}>
+              1–25 TON, раз в 24 часа
+            </div>
+
             <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
               <input
                 value={withdrawAmount}
-                onChange={(e) => setWithdrawAmount(Math.max(1, Math.min(25, Number(e.target.value || 1))))}
+                onChange={(e) => setWithdrawAmount(e.target.value)}
                 style={{ ...inputStyle, width: 120 }}
-                type="number"
-                min={1}
-                max={25}
-                step="0.1"
+                inputMode="decimal"
+                placeholder="TON"
               />
               <input
                 value={withdrawAddr}
@@ -170,6 +163,7 @@ export default function Wallet() {
                 style={{ ...inputStyle, flex: 1 }}
               />
             </div>
+
             <button className="btn btnPrimary" style={{ width: "100%", marginTop: 12 }} onClick={withdraw}>
               Создать заявку
             </button>
@@ -177,15 +171,7 @@ export default function Wallet() {
         )}
       </div>
 
-      {overlay ? (
-        <Overlay
-          title={overlay.title}
-          text={overlay.text}
-          onClose={() => setOverlay(null)}
-          action={overlay.title === "Оплата TON" ? { label: "Симулировать успех", onClick: () => { setOverlay(null); void buyBoostMock(); } } : undefined}
-          secondaryAction={overlay.title === "Оплата TON" ? { label: "Симулировать ошибку", onClick: () => setOverlay({ title: "Отменено", text: "Платёж не прошёл." }) } : undefined}
-        />
-      ) : null}
+      {overlay ? <Overlay title={overlay.title} text={overlay.text} onClose={() => setOverlay(null)} /> : null}
     </div>
   );
 }

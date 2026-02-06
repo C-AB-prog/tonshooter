@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useSession } from "../store/useSession";
 import { apiFetch } from "../lib/api";
 import { getTonPayMode, tonConnectPay } from "../lib/tonconnect";
@@ -13,7 +12,6 @@ type ShotStart = {
   zoneWidth: number;
   speed: number;
   energyCost: number;
-  mode?: "fixed" | "random";
   zoneMoves?: boolean;
   zonePhase?: number;
 };
@@ -50,9 +48,7 @@ function fmtBigintString(n: string) {
 }
 
 export default function Shoot() {
-  const nav = useNavigate();
   const { user, token, refresh } = useSession();
-
   const [overlay, setOverlay] = useState<{ title: string; text: string } | null>(null);
 
   const [session, setSession] = useState<ShotStart | null>(null);
@@ -61,6 +57,7 @@ export default function Shoot() {
 
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<{ hit: boolean; coins: string } | null>(null);
+  const [misses, setMisses] = useState(0);
 
   const startedPerf = useRef<number | null>(null);
   const raf = useRef<number | null>(null);
@@ -77,7 +74,6 @@ export default function Shoot() {
   useEffect(() => {
     if (!token) return;
     void startAttempt();
-
     return () => {
       if (raf.current) cancelAnimationFrame(raf.current);
     };
@@ -116,13 +112,15 @@ export default function Shoot() {
   if (!user || !token) return null;
   const tok = token;
 
+  const pct = Math.max(0, Math.min(100, (user.energy / user.energyMax) * 100));
+
   async function startAttempt() {
     setBusy(true);
     setResult(null);
+    setMisses(0);
 
     try {
       const s = await apiFetch<ShotStart>("/shot/start", { token, body: {} });
-
       setSession(s);
       setZoneCenter(s.zoneCenter);
       setBusy(false);
@@ -130,13 +128,9 @@ export default function Shoot() {
       setBusy(false);
       setSession(null);
 
-      if (e?.code === "no_energy") {
-        setOverlay({ title: "Нет энергии", text: "Можно купить буст." });
-      } else if (e?.code === "bot_suspected") {
-        setOverlay({ title: "Слишком быстро", text: "Попробуй позже." });
-      } else {
-        setOverlay({ title: "Ошибка", text: "Не удалось начать." });
-      }
+      if (e?.code === "no_energy") setOverlay({ title: "Нет энергии", text: "Можно купить буст." });
+      else if (e?.code === "bot_suspected") setOverlay({ title: "Слишком быстро", text: "Попробуй позже." });
+      else setOverlay({ title: "Ошибка", text: "Не удалось начать." });
     }
   }
 
@@ -161,8 +155,7 @@ export default function Shoot() {
   }
 
   async function fire() {
-    if (!session) return;
-    if (busy) return;
+    if (!session || busy) return;
 
     running.current = false;
     if (raf.current) cancelAnimationFrame(raf.current);
@@ -171,13 +164,14 @@ export default function Shoot() {
 
     try {
       const elapsed = Math.floor(performance.now() - (startedPerf.current ?? performance.now()));
-
       const r = await apiFetch<FireRes>("/shot/fire", {
         token,
         body: { sessionId: session.sessionId, clientElapsedMs: elapsed },
       });
 
       setResult({ hit: r.hit, coins: r.coinsAward });
+      if (!r.hit) setMisses((m) => m + 1);
+
       await refresh();
 
       if (!r.hit) setOverlay({ title: "Промах", text: "Сложность сброшена." });
@@ -207,17 +201,32 @@ export default function Shoot() {
     <div className="safe col">
       <div className="card" style={{ padding: 14 }}>
         <div className="h2">Стрельба</div>
+
+        {/* правило одной строкой */}
+        <div className="muted" style={{ marginTop: 6, fontWeight: 800, fontSize: 12, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          Попади в зелёную зону — получишь Coins
+        </div>
+
+        {/* энергия + цена */}
         <div className="balanceRow" style={{ marginTop: 12 }}>
           <div className="balanceItem">Цена: {session ? session.energyCost : "—"}</div>
+          <div className="balanceItem">Промахи: {misses}</div>
           <div className="balanceItem">⚡ {user.energy}/{user.energyMax}</div>
+        </div>
+
+        <div style={{ marginTop: 10 }}>
+          <div className="energyBar">
+            <div className="energyFill" style={{ width: `${pct}%` }} />
+          </div>
         </div>
       </div>
 
+      {/* шкала по центру */}
       <div className="card" style={{ padding: 14 }}>
         <div
           style={{
             position: "relative",
-            height: 26,
+            height: 28,
             borderRadius: 999,
             background: "rgba(15,23,42,0.06)",
             border: "1px solid rgba(15,23,42,0.10)",
@@ -239,7 +248,7 @@ export default function Shoot() {
             style={{
               position: "absolute",
               left: `calc(${pos * 100}% - 9px)`,
-              top: 3,
+              top: 5,
               width: 18,
               height: 18,
               borderRadius: 9,
@@ -255,27 +264,30 @@ export default function Shoot() {
             {result.hit ? `+${fmtBigintString(result.coins)} Coins` : "Промах"}
           </div>
         ) : null}
+      </div>
 
-        <button className="btn btnPrimary bigAction" disabled={busy || !session} onClick={fire} style={{ marginTop: 14 }}>
-          ОГОНЬ
-        </button>
-
-        <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
-          <button className="btn btnSoft" disabled={busy} onClick={startAttempt}>
-            Новая попытка
-          </button>
-          <button className="btn btnSoft" disabled={busy} onClick={() => nav("/wallet")}>
-            Кошелёк
-          </button>
-          <button className="btn btnGreen" disabled={busy} onClick={buyBoost} style={{ width: "100%" }}>
-            Буст • 🔷 1 TON
+      {/* кнопки вниз */}
+      <div className="fixedActionWrap">
+        <div className="fixedActionInner">
+          <button className="btn btnPrimary bigAction" disabled={busy || !session} onClick={fire}>
+            ОГОНЬ
           </button>
 
-          {user.isAdmin ? (
-            <button className="btn btnSoft" disabled={busy} onClick={adminFillEnergy} style={{ width: "100%" }}>
-              (ADMIN) Энергия 100
+          <div style={{ display: "grid", gap: 10, marginTop: 10 }}>
+            <button className="btn btnSoft" disabled={busy} onClick={startAttempt}>
+              Новая попытка
             </button>
-          ) : null}
+
+            <button className="btn btnGreen" disabled={busy} onClick={buyBoost}>
+              Буст • 🔷 1 TON
+            </button>
+
+            {user.isAdmin ? (
+              <button className="btn btnSoft" disabled={busy} onClick={adminFillEnergy}>
+                (ADMIN) Энергия 100
+              </button>
+            ) : null}
+          </div>
         </div>
       </div>
 

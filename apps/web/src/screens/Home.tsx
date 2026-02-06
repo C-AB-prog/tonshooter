@@ -29,18 +29,14 @@ export default function Home() {
       await apiFetch("/upgrade", { token, body: { which } });
       await refresh();
     } catch (e: any) {
-      if (e?.code === "upgrade_blocked")
-        setOverlay({ title: "Недоступно", text: e.payload?.reason ?? "Причина неизвестна" });
-      else if (e?.code === "not_enough_coins")
-        setOverlay({ title: "Не хватает Coins", text: "Нужно больше Coins." });
-      else if (e?.code === "not_enough_ton")
-        setOverlay({ title: "Не хватает TON", text: "Нужно 2 TON." });
-      else
-        setOverlay({ title: "Ошибка", text: "Попробуй позже." });
+      if (e?.code === "upgrade_blocked") setOverlay({ title: "Недоступно", text: e.payload?.reason ?? "Причина неизвестна" });
+      else if (e?.code === "not_enough_coins") setOverlay({ title: "Не хватает Coins", text: "Нужно больше Coins." });
+      else if (e?.code === "not_enough_ton") setOverlay({ title: "Не хватает TON", text: "Нужно 2 TON." });
+      else setOverlay({ title: "Ошибка", text: "Попробуй позже." });
     }
   }
 
-  function renderUpgradeCard(title: string, level: number, onUpgrade: () => void) {
+  function renderUpgradeCard(title: string, level: number, onUpgrade: () => void, icon: React.ReactNode) {
     const isMax = level >= MAX_LEVEL;
     const nextLevel = level + 1;
     const usesTon = nextLevel === 5;
@@ -58,7 +54,9 @@ export default function Home() {
           <span className="pill">Ур. {level}</span>
         </div>
 
-        <div className="imgStub">{title.toUpperCase()}</div>
+        <div className="iconStub" aria-hidden>
+          {icon}
+        </div>
 
         <button
           className={`btn ${isMax ? "btnSoft" : (usesTon ? "btnPrimary" : "btnGreen")}`}
@@ -73,15 +71,15 @@ export default function Home() {
   }
 
   return (
-    <div className="safe col">
-      <h1 className="h1">Главная</h1>
+    <div className="safe col" style={{ paddingTop: 0 }}>
+      {/* Главное действие — сразу */}
+      <button className="btn btnPrimary bigAction" onClick={() => nav("/shoot")}>
+        ОГОНЬ
+      </button>
 
-      <div className="col" style={{ gap: 10 }}>
-        <div className="h2">Улучшения</div>
-        <div className="row" style={{ alignItems: "stretch" }}>
-          {renderUpgradeCard("Оружие", user.weaponLevel, () => upgrade("weapon"))}
-          {renderUpgradeCard("Полигон", user.rangeLevel, () => upgrade("range"))}
-        </div>
+      <div className="row" style={{ alignItems: "stretch" }}>
+        {renderUpgradeCard("Оружие", user.weaponLevel, () => upgrade("weapon"), <WeaponIcon />)}
+        {renderUpgradeCard("Полигон", user.rangeLevel, () => upgrade("range"), <RangeIcon />)}
       </div>
 
       <div className="card tasksCard">
@@ -91,13 +89,35 @@ export default function Home() {
         </button>
       </div>
 
-      <button className="btn btnPrimary bigAction" onClick={() => nav("/shoot")}>
-        ОГОНЬ
-      </button>
-
-      {overlay && (
-        <Overlay title={overlay.title} text={overlay.text} onClose={() => setOverlay(null)} />
-      )}
+      {overlay ? <Overlay title={overlay.title} text={overlay.text} onClose={() => setOverlay(null)} /> : null}
     </div>
+  );
+}
+
+function baseIconProps() {
+  return { viewBox: "0 0 24 24", fill: "none", xmlns: "http://www.w3.org/2000/svg" } as const;
+}
+function strokeProps() {
+  return { stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+}
+
+function WeaponIcon() {
+  return (
+    <svg {...baseIconProps()}>
+      <path {...strokeProps()} d="M4 20l4-4" />
+      <path {...strokeProps()} d="M7 17l3 3" />
+      <path {...strokeProps()} d="M10 20l10-10a3 3 0 0 0-4-4L6 16" />
+      <path {...strokeProps()} d="M14 6l4 4" />
+    </svg>
+  );
+}
+
+function RangeIcon() {
+  return (
+    <svg {...baseIconProps()}>
+      <path {...strokeProps()} d="M12 22a10 10 0 1 0-10-10 10 10 0 0 0 10 10Z" />
+      <path {...strokeProps()} d="M12 18a6 6 0 1 0-6-6 6 6 0 0 0 6 6Z" />
+      <path {...strokeProps()} d="M12 14a2 2 0 1 0-2-2 2 2 0 0 0 2 2Z" />
+    </svg>
   );
 }

@@ -23,8 +23,6 @@ export default function App() {
       try {
         if (!token) await login();
         else await refresh();
-      } catch {
-        // handled by store error
       } finally {
         setBooting(false);
       }
@@ -60,6 +58,8 @@ export default function App() {
     <div>
       {isHome ? (
         <div className="safe col" style={{ paddingBottom: 12 }}>
+          <div className="h1">Главная</div>
+
           {user ? (
             <>
               <TopCard user={user} />

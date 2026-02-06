@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useSession } from "../store/useSession";
 import { apiFetch } from "../lib/api";
 import { getTonPayMode, tonConnectPay } from "../lib/tonconnect";
@@ -21,6 +22,7 @@ const PRICE: Record<number, number> = {
 };
 
 export default function Upgrades() {
+  const nav = useNavigate();
   const { user, token, refresh } = useSession();
   const [overlay, setOverlay] = useState<{ title: string; text: string } | null>(null);
   const [pendingTon, setPendingTon] = useState<null | { which: "weapon" | "range" }>(null);
@@ -82,15 +84,25 @@ export default function Upgrades() {
 
   return (
     <div className="safe col">
-      <h1 className="h1">Улучшения</h1>
+      <div className="h1">Улучшения</div>
 
+      {/* ресурсы сверху */}
+      <div className="card" style={{ padding: 14 }}>
+        <div className="balanceRow">
+          <div className="balanceItem">🪙 {fmt(user.coins)}</div>
+          <div className="balanceItem">💎 {fmt(user.crystals)}</div>
+          <div className="balanceItem">🔷 {user.tonBalance}</div>
+        </div>
+      </div>
+
+      {/* центр */}
       <div className="row" style={{ alignItems: "stretch" }}>
         <div className="card upgradeCard" style={{ flex: 1 }}>
           <div className="cardHead">
             <div className="cardTitle">Оружие</div>
             <span className="pill">Ур. {user.weaponLevel}</span>
           </div>
-          <div className="imgStub">WEAPON</div>
+          <div className="iconStub" aria-hidden><WeaponIcon /></div>
           <button
             className={`btn ${wDisabled ? "btnSoft" : (wUsesTon ? "btnPrimary" : "btnGreen")}`}
             disabled={wDisabled}
@@ -106,7 +118,7 @@ export default function Upgrades() {
             <div className="cardTitle">Полигон</div>
             <span className="pill">Ур. {user.rangeLevel}</span>
           </div>
-          <div className="imgStub">RANGE</div>
+          <div className="iconStub" aria-hidden><RangeIcon /></div>
           <button
             className={`btn ${rDisabled ? "btnSoft" : (rUsesTon ? "btnPrimary" : "btnGreen")}`}
             disabled={rDisabled}
@@ -114,6 +126,15 @@ export default function Upgrades() {
             style={{ width: "100%" }}
           >
             {rDisabled ? "Макс" : `Улучшить • ${rUsesTon ? "🔷 2 TON" : `🪙 ${fmt(String(rPrice))}`}`}
+          </button>
+        </div>
+      </div>
+
+      {/* заполняем низ — кнопкой стрелять */}
+      <div className="fixedActionWrap">
+        <div className="fixedActionInner">
+          <button className="btn btnPrimary bigAction" onClick={() => nav("/shoot")}>
+            ОГОНЬ
           </button>
         </div>
       </div>
@@ -139,5 +160,33 @@ export default function Upgrades() {
         />
       ) : null}
     </div>
+  );
+}
+
+function baseIconProps() {
+  return { viewBox: "0 0 24 24", fill: "none", xmlns: "http://www.w3.org/2000/svg" } as const;
+}
+function strokeProps() {
+  return { stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+}
+
+function WeaponIcon() {
+  return (
+    <svg {...baseIconProps()}>
+      <path {...strokeProps()} d="M4 20l4-4" />
+      <path {...strokeProps()} d="M7 17l3 3" />
+      <path {...strokeProps()} d="M10 20l10-10a3 3 0 0 0-4-4L6 16" />
+      <path {...strokeProps()} d="M14 6l4 4" />
+    </svg>
+  );
+}
+
+function RangeIcon() {
+  return (
+    <svg {...baseIconProps()}>
+      <path {...strokeProps()} d="M12 22a10 10 0 1 0-10-10 10 10 0 0 0 10 10Z" />
+      <path {...strokeProps()} d="M12 18a6 6 0 1 0-6-6 6 6 0 0 0 6 6Z" />
+      <path {...strokeProps()} d="M12 14a2 2 0 1 0-2-2 2 2 0 0 0 2 2Z" />
+    </svg>
   );
 }

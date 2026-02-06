@@ -93,16 +93,21 @@
   letter-spacing: -0.1px;
 }
 
-.imgStub{
+/* Icon stub (instead of text) */
+.iconStub{
   flex: 1;
   border-radius: 16px;
-  border: 1px dashed rgba(15,23,42,0.16);
-  background: rgba(15,23,42,0.025);
+  border: 1px dashed rgba(15,23,42,0.14);
+  background: rgba(15,23,42,0.02);
   display:grid;
   place-items:center;
+  min-height: 92px;
+}
+
+.iconStub svg{
+  width: 56px;
+  height: 56px;
   color: rgba(15,23,42,0.40);
-  font-weight: 800;
-  font-size: 12px;
 }
 
 /* Tasks */
@@ -116,7 +121,6 @@
 
 /* Big CTA button */
 .bigAction{
-  margin-top: 10px;
   width: 100%;
   min-height: 56px;
   padding: 0 18px;
@@ -155,4 +159,22 @@
   padding: 16px;
   border: 1px solid rgba(15,23,42,0.10);
   box-shadow: 0 18px 60px rgba(15,23,42,0.22);
+}
+
+/* Fixed bottom action (above bottom nav) */
+.fixedActionWrap{
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(86px + env(safe-area-inset-bottom));
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 60;
+}
+
+.fixedActionInner{
+  width: min(420px, 100%);
+  padding: 0 16px;
+  pointer-events: auto;
 }

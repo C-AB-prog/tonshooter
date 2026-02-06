@@ -20,15 +20,15 @@ export default function Profile() {
 
   if (!user || !token) return null;
 
-  const botUsername = import.meta.env.VITE_BOT_USERNAME as string;
-  const referralLink = ref ? `https://t.me/${botUsername}?startapp=${ref.payload}` : "";
+  const botUsername = (import.meta.env.VITE_BOT_USERNAME as string) || "";
+  const referralLink = ref && botUsername ? `https://t.me/${botUsername}?startapp=${ref.payload}` : "";
 
   async function copy() {
     try {
       await navigator.clipboard.writeText(referralLink);
       setOverlay({ title: "Скопировано", text: "Ссылка скопирована." });
     } catch {
-      setOverlay({ title: "Не удалось", text: referralLink });
+      setOverlay({ title: "Не удалось", text: referralLink || "Проверь VITE_BOT_USERNAME" });
     }
   }
 
@@ -44,16 +44,32 @@ export default function Profile() {
 
   return (
     <div className="safe col">
-      <h1 className="h1">Профиль</h1>
+      <div className="h1">Профиль</div>
 
+      {/* ресурсы сразу */}
+      <div className="card" style={{ padding: 14 }}>
+        <div className="balanceRow">
+          <div className="balanceItem">🪙 {user.coins}</div>
+          <div className="balanceItem">💎 {user.crystals}</div>
+          <div className="balanceItem">🔷 {user.tonBalance}</div>
+          <div className="balanceItem">⚡ {user.energy}/{user.energyMax}</div>
+        </div>
+      </div>
+
+      {/* рефералка */}
       <div className="card" style={{ padding: 14 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
           <div style={{ fontWeight: 900, fontSize: 18 }}>Рефералка</div>
           <span className="pill">{user.canWithdrawTon ? "✅" : "🔒"}</span>
         </div>
 
+        {/* условие одной строкой */}
+        <div className="muted" style={{ marginTop: 6, fontWeight: 800, fontSize: 12 }}>
+          Условие: 50 выстрелов и 20 попаданий за 24 часа
+        </div>
+
         <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
-          <input value={referralLink} readOnly style={{ ...inputStyle, flex: 1 }} />
+          <input value={referralLink || (botUsername ? "" : "Нужно настроить VITE_BOT_USERNAME")} readOnly style={{ ...inputStyle, flex: 1 }} />
           <button className="btn btnGreen" onClick={copy} disabled={!referralLink}>
             Копировать
           </button>
