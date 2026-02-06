@@ -28,6 +28,9 @@ export default function Tasks() {
   const [overlay, setOverlay] = useState<{ title: string; text: string } | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
+  // openToken per task (returned by /tasks/open)
+  const [openTokens, setOpenTokens] = useState<Record<string, string>>({});
+
   useEffect(() => {
     if (!token) return;
     void load();
@@ -40,40 +43,65 @@ export default function Tasks() {
     setTasks(res.tasks);
   }
 
-  async function claim(taskId: string) {
-    if (!token) return;
-    try {
-      setBusyId(taskId);
-      await apiFetch("/tasks/claim", { token, body: { taskId } });
-      await refresh();
-      await load();
-      setBusyId(null);
-    } catch (e: any) {
-      setBusyId(null);
-      if (e?.code === "not_subscribed") setOverlay({ title: "Не подписан", text: "Подпишись и нажми «Получить»." });
-      else if (e?.code === "need_open_first") setOverlay({ title: "Сначала «Перейти»", text: "Открой канал, потом получи награду." });
-      else if (e?.code === "already_claimed") setOverlay({ title: "Уже получено", text: "Награда уже получена." });
-      else if (e?.code === "task_limit_reached") setOverlay({ title: "Лимит", text: "Лимит по этому заданию исчерпан." });
-      else if (e?.code === "bot_suspected") setOverlay({ title: "Слишком быстро", text: "Попробуй позже." });
-      else setOverlay({ title: "Ошибка", text: "Не удалось получить награду." });
-    }
-  }
-
   async function openTask(t: Task) {
     if (!token) return;
     try {
       setBusyId(t.id);
-      await apiFetch("/tasks/open", { token, body: { taskId: t.id } });
+
+      const r = await apiFetch<{ ok: true; openToken: string; openTokenExpiresAt: string }>("/tasks/open", {
+        token,
+        body: { taskId: t.id },
+      });
+
+      setOpenTokens((prev) => ({ ...prev, [t.id]: r.openToken }));
       setTasks((prev) => prev.map((x) => (x.id === t.id ? { ...x, opened: true } : x)));
+
       setBusyId(null);
 
       const url = t.url || `https://t.me/${t.chatId.replace("@", "")}`;
       const tg = (window as any)?.Telegram?.WebApp;
       if (tg?.openTelegramLink && url.startsWith("https://t.me/")) tg.openTelegramLink(url);
       else window.open(url, "_blank", "noopener,noreferrer");
-    } catch {
+    } catch (e: any) {
       setBusyId(null);
-      setOverlay({ title: "Ошибка", text: "Не удалось открыть." });
+      setOverlay({ title: "Ошибка", text: e?.code ?? "Не удалось открыть." });
+    }
+  }
+
+  async function claim(taskId: string) {
+    if (!token) return;
+
+    const openToken = openTokens[taskId];
+    if (!openToken) {
+      setOverlay({ title: "Сначала «Перейти»", text: "Открой задание через «Перейти», затем нажми «Получить»." });
+      return;
+    }
+
+    try {
+      setBusyId(taskId);
+
+      await apiFetch("/tasks/claim", { token, body: { taskId, openToken } });
+
+      await refresh();
+      await load();
+
+      // token одноразовый — после успешного claim удаляем локально
+      setOpenTokens((prev) => {
+        const next = { ...prev };
+        delete next[taskId];
+        return next;
+      });
+
+      setBusyId(null);
+    } catch (e: any) {
+      setBusyId(null);
+
+      if (e?.code === "not_subscribed") setOverlay({ title: "Не подписан", text: "Подпишись и нажми «Получить»." });
+      else if (e?.code === "need_open_first") setOverlay({ title: "Сначала «Перейти»", text: "Открой канал, потом получи награду." });
+      else if (e?.code === "already_claimed") setOverlay({ title: "Уже получено", text: "Награда уже получена." });
+      else if (e?.code === "task_limit_reached") setOverlay({ title: "Лимит", text: "Лимит по этому заданию исчерпан." });
+      else if (e?.code === "bot_suspected") setOverlay({ title: "Слишком быстро", text: "Попробуй позже." });
+      else setOverlay({ title: "Ошибка", text: e?.code ?? "Не удалось получить награду." });
     }
   }
 

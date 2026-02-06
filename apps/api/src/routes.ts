@@ -1086,144 +1086,142 @@ router.get("/tasks", requireAuth, async (req, res) => {
 
 // Track that the user has opened the task link. This is required before claim (even in "click" mode).
 
-router.post("/tasks/open", requireAuth, async (req, res) => {
-  const { uid } = (req as AuthedRequest).auth;
-  const now = new Date();
+// Create openToken when user clicks "Перейти"
+router.post("/tasks/open", requireAuth, (req, res, next) => {
+  (async () => {
+    const { uid } = (req as AuthedRequest).auth;
+    const now = new Date();
 
-  const schema = z.object({ taskId: z.string().min(1) });
-  const { taskId } = schema.parse(req.body);
+    const schema = z.object({ taskId: z.string().min(1) });
+    const { taskId } = schema.parse(req.body);
 
-  const task = await prisma.task.findUnique({ where: { id: taskId } });
-  if (!task || !task.isActive) return res.status(404).json({ error: "task_not_found" });
+    const task = await prisma.task.findUnique({ where: { id: taskId } });
+    if (!task || !task.isActive) return res.status(404).json({ error: "task_not_found" });
 
-  const openToken = randomUUID();
-  const openTokenExpiresAt = new Date(now.getTime() + 15 * 60 * 1000); // 15 минут
+    const openToken = randomUUID();
+    const openTokenExpiresAt = new Date(now.getTime() + 15 * 60 * 1000); // 15 минут
 
-  await prisma.taskOpen.upsert({
-    where: { userId_taskId: { userId: uid, taskId } },
-    update: { openedAt: now, openToken, openTokenExpiresAt },
-    create: { userId: uid, taskId, openedAt: now, openToken, openTokenExpiresAt },
-  });
+    await prisma.taskOpen.upsert({
+      where: { userId_taskId: { userId: uid, taskId } },
+      update: { openedAt: now, openToken, openTokenExpiresAt },
+      create: { userId: uid, taskId, openedAt: now, openToken, openTokenExpiresAt },
+    });
 
-  return res.json({
-    ok: true,
-    openToken,
-    openTokenExpiresAt: openTokenExpiresAt.toISOString(),
-  });
+    return res.json({
+      ok: true,
+      openToken,
+      openTokenExpiresAt: openTokenExpiresAt.toISOString(),
+    });
+  })().catch(next);
 });
 
 
 // Claim task reward (requires prior /tasks/open -> openToken)
-router.post("/tasks/claim", requireAuth, async (req, res) => {
-  const { uid, tgUserId } = (req as AuthedRequest).auth;
-  const now = new Date();
+router.post("/tasks/claim", requireAuth, (req, res, next) => {
+  (async () => {
+    const { uid, tgUserId } = (req as AuthedRequest).auth;
+    const now = new Date();
 
-  const schema = z.object({
-    taskId: z.string().min(1),
-    openToken: z.string().uuid(),
-  });
-  const { taskId, openToken } = schema.parse(req.body);
+    const schema = z.object({
+      taskId: z.string().min(1),
+      openToken: z.string().uuid(),
+    });
+    const { taskId, openToken } = schema.parse(req.body);
 
-  const ab = await antibotCheckAndMaybeFlag(uid, "task_claim", now);
-  if (ab.blocked) return res.status(403).json({ error: "bot_suspected" });
+    const ab = await antibotCheckAndMaybeFlag(uid, "task_claim", now);
+    if (ab.blocked) return res.status(403).json({ error: "bot_suspected" });
 
-  const task = await prisma.task.findUnique({ where: { id: taskId } });
-  if (!task || !task.isActive) return res.status(404).json({ error: "task_not_found" });
+    const task = await prisma.task.findUnique({ where: { id: taskId } });
+    if (!task || !task.isActive) return res.status(404).json({ error: "task_not_found" });
 
-  // Must open first (fast pre-check)
-  const opened = await prisma.taskOpen.findUnique({
-    where: { userId_taskId: { userId: uid, taskId } },
-  });
-
-  if (!opened) return res.status(409).json({ error: "need_open_first" });
-  if (!opened.openToken || opened.openToken !== openToken) return res.status(409).json({ error: "need_open_first" });
-  if (opened.openTokenExpiresAt && opened.openTokenExpiresAt.getTime() < Date.now()) {
-    return res.status(409).json({ error: "need_open_first" });
-  }
-
-  // One user — one reward
-  const already = await prisma.taskClaim.findUnique({
-    where: { userId_taskId: { userId: uid, taskId } },
-  });
-  if (already) return res.status(409).json({ error: "already_claimed" });
-
-  // If required — check Telegram subscription
-  if (task.requireSubscriptionCheck) {
-    const isMember = await checkChatMember(task.chatId, tgUserId.toString(), config.botToken);
-    if (!isMember) return res.status(409).json({ error: "not_subscribed" });
-  }
-
-  try {
-    const updatedUser = await prisma.$transaction(async (tx) => {
-      // Re-check inside transaction (race-safe)
-      const [t, o, c] = await Promise.all([
-        tx.task.findUnique({ where: { id: taskId } }),
-        tx.taskOpen.findUnique({ where: { userId_taskId: { userId: uid, taskId } } }),
-        tx.taskClaim.findUnique({ where: { userId_taskId: { userId: uid, taskId } } }),
-      ]);
-
-      if (!t || !t.isActive) throw new Error("task_not_found");
-      if (c) throw new Error("already_claimed");
-
-      if (!o || !o.openToken || o.openToken !== openToken) throw new Error("need_open_first");
-      if (o.openTokenExpiresAt && o.openTokenExpiresAt.getTime() < Date.now()) throw new Error("need_open_first");
-
-      // Cap check (0 = unlimited)
-      if (t.cap > 0 && t.completedCount >= t.cap) {
-        // auto-disable (best-effort)
-        await tx.task.update({ where: { id: taskId }, data: { isActive: false } }).catch(() => undefined);
-        throw new Error("task_limit_reached");
-      }
-
-      // Create claim
-      await tx.taskClaim.create({ data: { userId: uid, taskId } });
-
-      // Increment completedCount + auto-disable if reached cap
-      const nextCompleted = t.completedCount + 1;
-      await tx.task.update({
-        where: { id: taskId },
-        data: {
-          completedCount: { increment: 1 },
-          ...(t.cap > 0 && nextCompleted >= t.cap ? { isActive: false } : {}),
-        },
-      });
-
-      // One-time openToken: invalidate after successful claim
-      await tx.taskOpen.update({
-        where: { userId_taskId: { userId: uid, taskId } },
-        data: { openToken: null, openTokenExpiresAt: null },
-      });
-
-      // Award reward
-      const u = await tx.user.update({
-        where: { id: uid },
-        data:
-          t.rewardType === RewardType.COINS
-            ? { coins: { increment: BigInt(t.rewardValue) } }
-            : { crystals: { increment: BigInt(t.rewardValue) } },
-      });
-
-      return u;
+    // Must open first (fast pre-check)
+    const opened = await prisma.taskOpen.findUnique({
+      where: { userId_taskId: { userId: uid, taskId } },
     });
 
-    await logAction(uid, "task_claim", { taskId });
+    if (!opened) return res.status(409).json({ error: "need_open_first" });
+    if (!opened.openToken || opened.openToken !== openToken) return res.status(409).json({ error: "need_open_first" });
+    if (opened.openTokenExpiresAt && opened.openTokenExpiresAt.getTime() < Date.now()) {
+      return res.status(409).json({ error: "need_open_first" });
+    }
 
-    return res.json({
-      ok: true,
-      coins: updatedUser.coins.toString(),
-      crystals: updatedUser.crystals.toString(),
+    // One user — one reward
+    const already = await prisma.taskClaim.findUnique({
+      where: { userId_taskId: { userId: uid, taskId } },
     });
-  } catch (e: any) {
-    const msg = String(e?.message ?? "");
-    if (msg === "task_limit_reached") return res.status(409).json({ error: "task_limit_reached" });
-    if (msg === "task_not_found") return res.status(404).json({ error: "task_not_found" });
-    if (msg === "already_claimed") return res.status(409).json({ error: "already_claimed" });
-    if (msg === "need_open_first") return res.status(409).json({ error: "need_open_first" });
-    throw e;
-  }
+    if (already) return res.status(409).json({ error: "already_claimed" });
+
+    // If required — check Telegram subscription
+    if (task.requireSubscriptionCheck) {
+      const isMember = await checkChatMember(task.chatId, tgUserId.toString(), config.botToken);
+      if (!isMember) return res.status(409).json({ error: "not_subscribed" });
+    }
+
+    try {
+      const updatedUser = await prisma.$transaction(async (tx) => {
+        // Re-check inside transaction (race-safe)
+        const [t, o, c] = await Promise.all([
+          tx.task.findUnique({ where: { id: taskId } }),
+          tx.taskOpen.findUnique({ where: { userId_taskId: { userId: uid, taskId } } }),
+          tx.taskClaim.findUnique({ where: { userId_taskId: { userId: uid, taskId } } }),
+        ]);
+
+        if (!t || !t.isActive) throw new Error("task_not_found");
+        if (c) throw new Error("already_claimed");
+
+        if (!o || !o.openToken || o.openToken !== openToken) throw new Error("need_open_first");
+        if (o.openTokenExpiresAt && o.openTokenExpiresAt.getTime() < Date.now()) throw new Error("need_open_first");
+
+        // Cap check (0 = unlimited)
+        if (t.cap > 0 && t.completedCount >= t.cap) {
+          await tx.task.update({ where: { id: taskId }, data: { isActive: false } }).catch(() => undefined);
+          throw new Error("task_limit_reached");
+        }
+
+        await tx.taskClaim.create({ data: { userId: uid, taskId } });
+
+        const nextCompleted = t.completedCount + 1;
+        await tx.task.update({
+          where: { id: taskId },
+          data: {
+            completedCount: { increment: 1 },
+            ...(t.cap > 0 && nextCompleted >= t.cap ? { isActive: false } : {}),
+          },
+        });
+
+        await tx.taskOpen.update({
+          where: { userId_taskId: { userId: uid, taskId } },
+          data: { openToken: null, openTokenExpiresAt: null },
+        });
+
+        const u = await tx.user.update({
+          where: { id: uid },
+          data:
+            t.rewardType === RewardType.COINS
+              ? { coins: { increment: BigInt(t.rewardValue) } }
+              : { crystals: { increment: BigInt(t.rewardValue) } },
+        });
+
+        return u;
+      });
+
+      await logAction(uid, "task_claim", { taskId });
+
+      return res.json({
+        ok: true,
+        coins: updatedUser.coins.toString(),
+        crystals: updatedUser.crystals.toString(),
+      });
+    } catch (e: any) {
+      const msg = String(e?.message ?? "");
+      if (msg === "task_limit_reached") return res.status(409).json({ error: "task_limit_reached" });
+      if (msg === "task_not_found") return res.status(404).json({ error: "task_not_found" });
+      if (msg === "already_claimed") return res.status(409).json({ error: "already_claimed" });
+      if (msg === "need_open_first") return res.status(409).json({ error: "need_open_first" });
+      throw e;
+    }
+  })().catch(next);
 });
-
-
 /**
  * Withdraw TON
  */
