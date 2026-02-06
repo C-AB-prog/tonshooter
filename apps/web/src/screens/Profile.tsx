@@ -32,67 +32,127 @@ export default function Profile() {
     }
   }
 
+  const inputStyle: React.CSSProperties = {
+    minHeight: 44,
+    padding: "0 12px",
+    borderRadius: 14,
+    border: "1px solid rgba(15,23,42,0.12)",
+    background: "rgba(255,255,255,0.92)",
+    fontWeight: 800,
+    outline: "none",
+  };
+
+  const withdrawBadgeStyle: React.CSSProperties = user.canWithdrawTon
+    ? {
+        background: "rgba(31, 184, 106, 0.12)",
+        borderColor: "rgba(31, 184, 106, 0.22)",
+        color: "rgba(10, 110, 60, 0.95)",
+      }
+    : {
+        background: "rgba(255, 77, 79, 0.12)",
+        borderColor: "rgba(255, 77, 79, 0.22)",
+        color: "rgba(180, 25, 30, 0.95)",
+      };
+
   return (
     <div className="safe col">
+      {/* Header */}
+      <div className="card topCard">
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div className="avatar">P</div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontWeight: 900, fontSize: 18, letterSpacing: "-0.1px" }}>Профиль</div>
+            <div className="muted" style={{ marginTop: 3, fontWeight: 700, fontSize: 12 }}>
+              Рефералы дают награду монетами. Вывод TON открывается после 1 активного реферала.
+            </div>
+          </div>
+        </div>
+
+        <span className="pill" style={withdrawBadgeStyle}>
+          {user.canWithdrawTon ? "✅ вывод открыт" : "🔒 вывод закрыт"}
+        </span>
+      </div>
+
+      {/* Referral */}
       <div className="card" style={{ padding: 14 }}>
-        <div className="h2">Профиль</div>
-        <div className="muted" style={{ marginTop: 6, fontWeight: 600 }}>
-          Рефералы дают награду монетами. Вывод TON открывается после 1 активного реферала.
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+          <div>
+            <div style={{ fontWeight: 900, fontSize: 18, letterSpacing: "-0.1px" }}>Реферальная система</div>
+            <div className="muted" style={{ marginTop: 6, fontWeight: 700, fontSize: 13 }}>
+              Приглашённых: <b>{ref?.referralCount ?? "—"}</b>
+            </div>
+          </div>
+
+          <span className="pill">
+            Активных: <b>{user.activeReferralCount}</b>
+          </span>
+        </div>
+
+        <div className="notice" style={{ marginTop: 12 }}>
+          Условия активности: у приглашённого за 24 часа — <b>50 выстрелов</b> и <b>20 попаданий</b>.
+        </div>
+
+        <div className="muted" style={{ marginTop: 10, fontWeight: 700, fontSize: 13 }}>
+          Ваша ссылка:
+        </div>
+
+        <div style={{ marginTop: 10, display: "flex", gap: 10, alignItems: "stretch" }}>
+          <input value={referralLink} readOnly style={{ ...inputStyle, flex: 1 }} />
+          <button className="btn btnGreen" onClick={copy} disabled={!referralLink}>
+            Копировать
+          </button>
+        </div>
+
+        <div className="muted" style={{ marginTop: 10, fontWeight: 700, fontSize: 12 }}>
+          Поделись ссылкой с другом — после выполнения условий вывод TON станет доступен.
         </div>
       </div>
 
+      {/* Wallet shortcut */}
       <div className="card" style={{ padding: 14 }}>
-        <div style={{ fontWeight: 900 }}>Реферальная система</div>
-        <div className="muted" style={{ marginTop: 6, fontWeight: 600 }}>
-          Приглашённых: {ref?.referralCount ?? "—"}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+          <div>
+            <div style={{ fontWeight: 900, fontSize: 18, letterSpacing: "-0.1px" }}>Кошелёк</div>
+            <div className="muted" style={{ marginTop: 6, fontWeight: 700, fontSize: 13 }}>
+              Обмен Coins/Crystals/TON и вывод.
+            </div>
+          </div>
+          <span className="pill">🔷</span>
         </div>
-
-        <div className="muted" style={{ marginTop: 6, fontWeight: 700 }}>
-          Активных (с наградой): <b>{user.activeReferralCount}</b> • Вывод TON: <b>{user.canWithdrawTon ? "открыт" : "закрыт"}</b>
-        </div>
-
-        <div className="muted" style={{ marginTop: 6, fontWeight: 600 }}>
-          Условия активности: 50 выстрелов и 20 попаданий за 24 часа у приглашённого.
-        </div>
-
-        <div style={{ marginTop: 10, display: "flex", gap: 10 }}>
-          <input
-            value={referralLink}
-            readOnly
-            style={{ flex: 1, padding: 12, borderRadius: 12, border: "1px solid rgba(0,0,0,0.12)" }}
-          />
-          <button className="btn btnGreen" onClick={copy}>Копировать</button>
-        </div>
-      </div>
-
-      <div className="card" style={{ padding: 14 }}>
-        <div style={{ fontWeight: 900 }}>Кошелёк</div>
-        <div className="muted" style={{ marginTop: 6, fontWeight: 600 }}>
-          Обмен Coins/Crystals/TON и вывод.
-        </div>
-        <button className="btn btnPrimary" style={{ width: "100%", marginTop: 10 }} onClick={() => nav("/wallet")}>
+        <button className="btn btnPrimary" style={{ width: "100%", marginTop: 12 }} onClick={() => nav("/wallet")}>
           Открыть
         </button>
       </div>
 
+      {/* Admin shortcut */}
       {user.isAdmin ? (
         <div className="card" style={{ padding: 14 }}>
-          <div style={{ fontWeight: 900 }}>Админка</div>
-          <div className="muted" style={{ marginTop: 6, fontWeight: 600 }}>
-            Быстро выдавать ресурсы, ставить уровни и сбрасывать лимиты для тестов.
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+            <div>
+              <div style={{ fontWeight: 900, fontSize: 18, letterSpacing: "-0.1px" }}>Админка</div>
+              <div className="muted" style={{ marginTop: 6, fontWeight: 700, fontSize: 13 }}>
+                Выдача ресурсов, уровни, сброс лимитов.
+              </div>
+            </div>
+            <span className="pill">🛠</span>
           </div>
-          <button className="btn btnGreen" style={{ width: "100%", marginTop: 10 }} onClick={() => nav("/admin")}>
+          <button className="btn btnGreen" style={{ width: "100%", marginTop: 12 }} onClick={() => nav("/admin")}>
             Открыть
           </button>
         </div>
       ) : null}
 
+      {/* Account */}
       <div className="card" style={{ padding: 14 }}>
-        <div style={{ fontWeight: 900 }}>Аккаунт</div>
-        <div className="muted" style={{ marginTop: 6, fontWeight: 600 }}>
+        <div style={{ fontWeight: 900, fontSize: 18, letterSpacing: "-0.1px" }}>Аккаунт</div>
+        <div className="muted" style={{ marginTop: 6, fontWeight: 700, fontSize: 13 }}>
           Если тестируешь локально — можно выйти и войти снова.
         </div>
-        <button className="btn" style={{ width: "100%", marginTop: 10, background: "rgba(0,0,0,0.06)" }} onClick={logout}>
+        <button
+          className="btn btnSoft"
+          style={{ width: "100%", marginTop: 12 }}
+          onClick={logout}
+        >
           Выйти
         </button>
       </div>

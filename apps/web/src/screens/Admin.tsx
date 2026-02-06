@@ -71,12 +71,36 @@ export default function Admin() {
   }, [targetTgUserId]);
 
   if (!user || !token) return null;
+
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    minHeight: 44,
+    padding: "0 12px",
+    borderRadius: 14,
+    border: "1px solid rgba(15,23,42,0.12)",
+    background: "rgba(255,255,255,0.92)",
+    fontWeight: 800,
+    outline: "none",
+  };
+
+  const textareaStyle: React.CSSProperties = {
+    width: "100%",
+    minHeight: 44,
+    padding: "10px 12px",
+    borderRadius: 14,
+    border: "1px solid rgba(15,23,42,0.12)",
+    background: "rgba(255,255,255,0.92)",
+    fontWeight: 800,
+    outline: "none",
+    resize: "vertical",
+  };
+
   if (!user.isAdmin) {
     return (
       <div className="safe col">
         <div className="card" style={{ padding: 14 }}>
           <div className="h2">Админка</div>
-          <div className="muted" style={{ marginTop: 6, fontWeight: 600 }}>
+          <div className="muted" style={{ marginTop: 6, fontWeight: 700 }}>
             Доступ запрещён.
           </div>
           <button className="btn btnPrimary" style={{ width: "100%", marginTop: 12 }} onClick={() => nav("/profile")}>
@@ -159,90 +183,94 @@ export default function Admin() {
 
   return (
     <div className="safe col">
-      <div className="card" style={{ padding: 14 }}>
-        <div className="h2">Админка</div>
-        <div className="muted" style={{ marginTop: 6, fontWeight: 600 }}>
-          Быстрые действия для тестирования. Цель: {targetLabel}
+      {/* Header */}
+      <div className="card topCard">
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div className="avatar">A</div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontWeight: 900, fontSize: 18, letterSpacing: "-0.1px" }}>Админка</div>
+            <div className="muted" style={{ marginTop: 3, fontWeight: 700, fontSize: 12 }}>
+              Быстрые действия для тестирования. Цель: <b>{targetLabel}</b>
+            </div>
+          </div>
         </div>
+        <span className="pill">🛠 admin</span>
       </div>
 
+      {/* Target */}
       <div className="card" style={{ padding: 14 }}>
-        <div style={{ fontWeight: 900 }}>Цель</div>
-        <div className="muted" style={{ marginTop: 6, fontWeight: 600 }}>
-          Оставь пустым — применится к тебе. Чтобы выдать другому игроку — вставь его <b>tgUserId</b>.
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+          <div>
+            <div style={{ fontWeight: 900, fontSize: 18, letterSpacing: "-0.1px" }}>Цель</div>
+            <div className="muted" style={{ marginTop: 6, fontWeight: 700, fontSize: 13 }}>
+              Оставь пустым — применится к тебе. Чтобы выдать другому игроку — вставь его <b>tgUserId</b>.
+            </div>
+          </div>
+          <span className="pill">🎯</span>
         </div>
+
         <input
           value={targetTgUserId}
           onChange={(e) => setTargetTgUserId(e.target.value)}
           placeholder="target tgUserId (не обязательно)"
-          style={{ width: "100%", padding: 12, borderRadius: 12, border: "1px solid rgba(0,0,0,0.12)", marginTop: 10 }}
+          style={{ ...inputStyle, marginTop: 12 }}
         />
       </div>
 
+      {/* Grant resources */}
       <div className="card" style={{ padding: 14 }}>
-        <div style={{ fontWeight: 900 }}>Выдать ресурсы</div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+          <div>
+            <div style={{ fontWeight: 900, fontSize: 18, letterSpacing: "-0.1px" }}>Выдать ресурсы</div>
+            <div className="muted" style={{ marginTop: 6, fontWeight: 700, fontSize: 13 }}>
+              Coins / Crystals / TON (внутренний баланс).
+            </div>
+          </div>
+          <span className="pill">💰</span>
+        </div>
 
-        <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "1fr 120px", gap: 10 }}>
-          <input
-            value={coins}
-            onChange={(e) => setCoins(e.target.value)}
-            placeholder="coins (например 1000000)"
-            style={{ padding: 12, borderRadius: 12, border: "1px solid rgba(0,0,0,0.12)" }}
-          />
+        <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "1fr 140px", gap: 10 }}>
+          <input value={coins} onChange={(e) => setCoins(e.target.value)} placeholder="coins (например 1000000)" style={inputStyle} />
           <button className="btn btnGreen" onClick={() => grant({ coins: coins }, `+${coins} coins (${targetLabel})`)}>
             +Coins
           </button>
 
-          <input
-            value={crystals}
-            onChange={(e) => setCrystals(e.target.value)}
-            placeholder="crystals (например 100)"
-            style={{ padding: 12, borderRadius: 12, border: "1px solid rgba(0,0,0,0.12)" }}
-          />
+          <input value={crystals} onChange={(e) => setCrystals(e.target.value)} placeholder="crystals (например 100)" style={inputStyle} />
           <button className="btn btnGreen" onClick={() => grant({ crystals: crystals }, `+${crystals} crystals (${targetLabel})`)}>
             +Crystals
           </button>
 
-          <input
-            value={tonBalance}
-            onChange={(e) => setTonBalance(e.target.value)}
-            placeholder="tonBalance (внутр. баланс)"
-            style={{ padding: 12, borderRadius: 12, border: "1px solid rgba(0,0,0,0.12)" }}
-          />
+          <input value={tonBalance} onChange={(e) => setTonBalance(e.target.value)} placeholder="tonBalance (внутр. баланс)" style={inputStyle} />
           <button className="btn btnGreen" onClick={() => grant({ tonBalance: tonBalance }, `+${tonBalance} TON (internal) (${targetLabel})`)}>
             +TON
           </button>
         </div>
 
         <div style={{ display: "flex", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
-          <button className="btn" style={{ background: "rgba(0,0,0,0.06)" }} onClick={() => grant({ coins: 100000 }, "+100 000 coins")}>+100k</button>
-          <button className="btn" style={{ background: "rgba(0,0,0,0.06)" }} onClick={() => grant({ coins: 1000000 }, "+1 000 000 coins")}>+1M</button>
-          <button className="btn" style={{ background: "rgba(0,0,0,0.06)" }} onClick={() => grant({ crystals: 100 }, "+100 crystals")}>+100💎</button>
-          <button className="btn" style={{ background: "rgba(0,0,0,0.06)" }} onClick={() => grant({ crystals: 1000 }, "+1000 crystals")}>+1000💎</button>
-          <button className="btn" style={{ background: "rgba(0,0,0,0.06)" }} onClick={() => grant({ tonBalance: 1 }, "+1 TON (internal)")}>+1🔷</button>
-          <button className="btn" style={{ background: "rgba(0,0,0,0.06)" }} onClick={() => grant({ tonBalance: 5 }, "+5 TON (internal)")}>+5🔷</button>
+          <button className="btn btnSoft" onClick={() => grant({ coins: 100000 }, "+100 000 coins")}>+100k</button>
+          <button className="btn btnSoft" onClick={() => grant({ coins: 1000000 }, "+1 000 000 coins")}>+1M</button>
+          <button className="btn btnSoft" onClick={() => grant({ crystals: 100 }, "+100 crystals")}>+100💎</button>
+          <button className="btn btnSoft" onClick={() => grant({ crystals: 1000 }, "+1000 crystals")}>+1000💎</button>
+          <button className="btn btnSoft" onClick={() => grant({ tonBalance: 1 }, "+1 TON (internal)")}>+1🔷</button>
+          <button className="btn btnSoft" onClick={() => grant({ tonBalance: 5 }, "+5 TON (internal)")}>+5🔷</button>
         </div>
       </div>
 
+      {/* Levels */}
       <div className="card" style={{ padding: 14 }}>
-        <div style={{ fontWeight: 900 }}>Уровни</div>
-        <div className="muted" style={{ marginTop: 6, fontWeight: 600 }}>
-          Поставить уровень оружия/полигона сразу.
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+          <div>
+            <div style={{ fontWeight: 900, fontSize: 18, letterSpacing: "-0.1px" }}>Уровни</div>
+            <div className="muted" style={{ marginTop: 6, fontWeight: 700, fontSize: 13 }}>
+              Поставить уровень оружия/полигона сразу.
+            </div>
+          </div>
+          <span className="pill">📈</span>
         </div>
 
-        <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-          <input
-            value={weaponLevel}
-            onChange={(e) => setWeaponLevel(e.target.value)}
-            placeholder="weapon level (1..10)"
-            style={{ padding: 12, borderRadius: 12, border: "1px solid rgba(0,0,0,0.12)" }}
-          />
-          <input
-            value={rangeLevel}
-            onChange={(e) => setRangeLevel(e.target.value)}
-            placeholder="range level (1..10)"
-            style={{ padding: 12, borderRadius: 12, border: "1px solid rgba(0,0,0,0.12)" }}
-          />
+        <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+          <input value={weaponLevel} onChange={(e) => setWeaponLevel(e.target.value)} placeholder="weapon level (1..10)" style={inputStyle} />
+          <input value={rangeLevel} onChange={(e) => setRangeLevel(e.target.value)} placeholder="range level (1..10)" style={inputStyle} />
         </div>
 
         <button
@@ -262,85 +290,84 @@ export default function Admin() {
         </button>
       </div>
 
+      {/* Quick actions */}
       <div className="card" style={{ padding: 14 }}>
-        <div style={{ fontWeight: 900 }}>Быстрые действия</div>
-        <div style={{ display: "flex", gap: 10, marginTop: 10, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+          <div>
+            <div style={{ fontWeight: 900, fontSize: 18, letterSpacing: "-0.1px" }}>Быстрые действия</div>
+            <div className="muted" style={{ marginTop: 6, fontWeight: 700, fontSize: 13 }}>
+              Сбросы и энергия (удобно для тестов).
+            </div>
+          </div>
+          <span className="pill">⚡</span>
+        </div>
+
+        <div style={{ display: "flex", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
           <button className="btn btnGreen" onClick={() => grant({ energy: 100 }, "Энергия = 100")}>Энергия 100</button>
-          <button className="btn" style={{ background: "rgba(0,0,0,0.06)" }} onClick={() => grant({ resetBoost: true }, "Сброшен буст")}>Сброс буста</button>
-          <button className="btn" style={{ background: "rgba(0,0,0,0.06)" }} onClick={() => grant({ resetWithdrawal: true }, "Сброшен вывод")}>Сброс вывода</button>
-          <button className="btn" style={{ background: "rgba(0,0,0,0.06)" }} onClick={() => grant({ resetAntibot: true }, "Сброшен антибот")}>Сброс антибота</button>
+          <button className="btn btnSoft" onClick={() => grant({ resetBoost: true }, "Сброшен буст")}>Сброс буста</button>
+          <button className="btn btnSoft" onClick={() => grant({ resetWithdrawal: true }, "Сброшен вывод")}>Сброс вывода</button>
+          <button className="btn btnSoft" onClick={() => grant({ resetAntibot: true }, "Сброшен антибот")}>Сброс антибота</button>
         </div>
       </div>
 
+      {/* Mock purchases */}
       <div className="card" style={{ padding: 14 }}>
-        <div style={{ fontWeight: 900 }}>Mock TON покупки (для тестов)</div>
-        <div className="muted" style={{ marginTop: 6, fontWeight: 600 }}>
-          Это симуляция оплаты. В боевом режиме будет TonConnect.
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+          <div>
+            <div style={{ fontWeight: 900, fontSize: 18, letterSpacing: "-0.1px" }}>Mock TON покупки</div>
+            <div className="muted" style={{ marginTop: 6, fontWeight: 700, fontSize: 13 }}>
+              Это симуляция оплаты. В боевом режиме будет TonConnect.
+            </div>
+          </div>
+          <span className="pill">🔷 mock</span>
         </div>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 10, marginTop: 10 }}>
-          <button className="btn btnPrimary" onClick={() => doMockPurchase("boost")}>Оплатить буст (mock)</button>
-          <button className="btn" style={{ background: "rgba(0,0,0,0.06)" }} onClick={() => doMockPurchase("upgrade_weapon_5")}>Оплатить upgrade weapon 4→5 (mock)</button>
-          <button className="btn" style={{ background: "rgba(0,0,0,0.06)" }} onClick={() => doMockPurchase("upgrade_range_5")}>Оплатить upgrade range 4→5 (mock)</button>
+
+        <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 10, marginTop: 12 }}>
+          <button className="btn btnPrimary" onClick={() => doMockPurchase("boost")}>
+            Оплатить буст (mock)
+          </button>
+          <button className="btn btnSoft" onClick={() => doMockPurchase("upgrade_weapon_5")}>
+            Оплатить upgrade weapon 4→5 (mock)
+          </button>
+          <button className="btn btnSoft" onClick={() => doMockPurchase("upgrade_range_5")}>
+            Оплатить upgrade range 4→5 (mock)
+          </button>
         </div>
       </div>
 
+      {/* Admin tasks */}
       <div className="card" style={{ padding: 14 }}>
-        <div style={{ fontWeight: 900 }}>Задания / реклама</div>
-        <div className="muted" style={{ marginTop: 6, fontWeight: 600 }}>
-          Создавай рекламные задания с лимитом выполнений. В режиме «проверка подписки» бот должен иметь доступ к каналу.
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+          <div>
+            <div style={{ fontWeight: 900, fontSize: 18, letterSpacing: "-0.1px" }}>Задания / реклама</div>
+            <div className="muted" style={{ marginTop: 6, fontWeight: 700, fontSize: 13 }}>
+              Создавай рекламные задания с лимитом выполнений. В режиме «проверка подписки» бот должен иметь доступ к каналу.
+            </div>
+          </div>
+          <span className="pill">📣</span>
         </div>
 
-        <div style={{ marginTop: 10, display: "grid", gridTemplateColumns: "1fr", gap: 10 }}>
-          <input
-            value={taskTitle}
-            onChange={(e) => setTaskTitle(e.target.value)}
-            placeholder="Заголовок"
-            style={{ padding: 12, borderRadius: 12, border: "1px solid rgba(0,0,0,0.12)" }}
-          />
-          <input
-            value={taskDescription}
-            onChange={(e) => setTaskDescription(e.target.value)}
-            placeholder="Описание"
-            style={{ padding: 12, borderRadius: 12, border: "1px solid rgba(0,0,0,0.12)" }}
-          />
-          <input
-            value={taskChatId}
-            onChange={(e) => setTaskChatId(e.target.value)}
-            placeholder="chatId (например @channel)"
-            style={{ padding: 12, borderRadius: 12, border: "1px solid rgba(0,0,0,0.12)" }}
-          />
-          <input
-            value={taskUrl}
-            onChange={(e) => setTaskUrl(e.target.value)}
-            placeholder="Ссылка (https://t.me/...)"
-            style={{ padding: 12, borderRadius: 12, border: "1px solid rgba(0,0,0,0.12)" }}
-          />
+        <div className="notice" style={{ marginTop: 12 }}>
+          Совет: для «проверки подписки» бот должен быть админом/иметь доступ к списку участников в канале.
+        </div>
+
+        <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "1fr", gap: 10 }}>
+          <input value={taskTitle} onChange={(e) => setTaskTitle(e.target.value)} placeholder="Заголовок" style={inputStyle} />
+          <input value={taskDescription} onChange={(e) => setTaskDescription(e.target.value)} placeholder="Описание" style={inputStyle} />
+          <input value={taskChatId} onChange={(e) => setTaskChatId(e.target.value)} placeholder="chatId (например @channel)" style={inputStyle} />
+          <input value={taskUrl} onChange={(e) => setTaskUrl(e.target.value)} placeholder="Ссылка (https://t.me/...)" style={inputStyle} />
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            <select
-              value={taskRewardType}
-              onChange={(e) => setTaskRewardType(e.target.value as any)}
-              style={{ padding: 12, borderRadius: 12, border: "1px solid rgba(0,0,0,0.12)" }}
-            >
+            <select value={taskRewardType} onChange={(e) => setTaskRewardType(e.target.value as any)} style={inputStyle}>
               <option value="COINS">Награда: coins</option>
               <option value="CRYSTALS">Награда: crystals</option>
             </select>
-            <input
-              value={taskRewardValue}
-              onChange={(e) => setTaskRewardValue(e.target.value)}
-              placeholder="Сколько"
-              style={{ padding: 12, borderRadius: 12, border: "1px solid rgba(0,0,0,0.12)" }}
-            />
+            <input value={taskRewardValue} onChange={(e) => setTaskRewardValue(e.target.value)} placeholder="Сколько" style={inputStyle} />
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, alignItems: "center" }}>
-            <input
-              value={taskCap}
-              onChange={(e) => setTaskCap(e.target.value)}
-              placeholder="Лимит выполнений (например 10)"
-              style={{ padding: 12, borderRadius: 12, border: "1px solid rgba(0,0,0,0.12)" }}
-            />
-            <label style={{ display: "flex", gap: 10, alignItems: "center", fontWeight: 800 }}>
+            <input value={taskCap} onChange={(e) => setTaskCap(e.target.value)} placeholder="Лимит выполнений (например 10)" style={inputStyle} />
+            <label style={{ display: "flex", gap: 10, alignItems: "center", fontWeight: 900 }}>
               <input type="checkbox" checked={taskRequireSub} onChange={(e) => setTaskRequireSub(e.target.checked)} />
               Проверка подписки
             </label>
@@ -349,7 +376,8 @@ export default function Admin() {
           <button className="btn btnPrimary" onClick={createTask}>
             Создать задание
           </button>
-          <button className="btn" style={{ background: "rgba(0,0,0,0.06)" }} onClick={loadAdminTasks}>
+
+          <button className="btn btnSoft" onClick={loadAdminTasks}>
             Обновить список
           </button>
         </div>
@@ -358,18 +386,31 @@ export default function Admin() {
           <div style={{ marginTop: 12, display: "grid", gridTemplateColumns: "1fr", gap: 10 }}>
             {adminTasks.map((t) => {
               const remaining = t.cap > 0 ? Math.max(0, t.cap - t.completedCount) : null;
+              const statusStyle: React.CSSProperties = t.isActive
+                ? { background: "rgba(31, 184, 106, 0.12)", borderColor: "rgba(31, 184, 106, 0.22)", color: "rgba(10, 110, 60, 0.95)" }
+                : { background: "rgba(255, 77, 79, 0.12)", borderColor: "rgba(255, 77, 79, 0.22)", color: "rgba(180, 25, 30, 0.95)" };
+
               return (
-                <div key={t.id} className="card" style={{ padding: 12, background: "rgba(0,0,0,0.03)" }}>
-                  <div style={{ fontWeight: 900 }}>{t.title}</div>
-                  <div className="muted" style={{ marginTop: 6, fontWeight: 600 }}>{t.description}</div>
-                  <div className="muted" style={{ marginTop: 6, fontWeight: 700 }}>
-                    {t.isActive ? "🟢 активна" : "🔴 выключена"} · cap={t.cap} · выполнено={t.completedCount}
+                <div key={t.id} className="card" style={{ padding: 12, background: "rgba(255,255,255,0.70)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 900 }}>{t.title}</div>
+                      <div className="muted" style={{ marginTop: 6, fontWeight: 700 }}>{t.description}</div>
+                    </div>
+                    <span className="pill" style={statusStyle}>{t.isActive ? "🟢 active" : "🔴 off"}</span>
+                  </div>
+
+                  <div className="muted" style={{ marginTop: 8, fontWeight: 800, fontSize: 12 }}>
+                    cap={t.cap} · выполнено={t.completedCount}
                     {remaining !== null ? ` · осталось=${remaining}` : ""}
                     {t.requireSubscriptionCheck ? " · проверка подписки" : " · клик"}
+                    {" · "}
+                    {t.rewardType === "COINS" ? `🪙 ${t.rewardValue}` : `💎 ${t.rewardValue}`}
                   </div>
+
                   <div style={{ display: "flex", gap: 10, marginTop: 10, flexWrap: "wrap" }}>
                     {t.isActive ? (
-                      <button className="btn" style={{ background: "rgba(0,0,0,0.06)" }} onClick={() => setTaskActive(t.id, false)}>
+                      <button className="btn btnSoft" onClick={() => setTaskActive(t.id, false)}>
                         Выключить
                       </button>
                     ) : (
@@ -383,13 +424,13 @@ export default function Admin() {
             })}
           </div>
         ) : (
-          <div className="muted" style={{ marginTop: 10, fontWeight: 600 }}>
+          <div className="muted" style={{ marginTop: 10, fontWeight: 800 }}>
             Заданий пока нет.
           </div>
         )}
       </div>
 
-      <button className="btn" style={{ width: "100%", marginTop: 10, background: "rgba(0,0,0,0.06)" }} onClick={() => nav("/profile")}>
+      <button className="btn btnSoft" style={{ width: "100%", marginTop: 2 }} onClick={() => nav("/profile")}>
         Назад в профиль
       </button>
 
