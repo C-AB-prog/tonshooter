@@ -88,33 +88,65 @@ export default function Wallet() {
 
   const locked = !user.canWithdrawTon;
 
+  const inputStyle: React.CSSProperties = {
+    minHeight: 44,
+    padding: "0 12px",
+    borderRadius: 14,
+    border: "1px solid rgba(15,23,42,0.12)",
+    background: "rgba(255,255,255,0.92)",
+    fontWeight: 800,
+    outline: "none",
+  };
+
   return (
     <div className="safe col">
+      {/* Header */}
       <div className="card" style={{ padding: 14 }}>
         <div className="h2">Кошелёк</div>
-        <div className="muted" style={{ marginTop: 6, fontWeight: 600 }}>
+        <div className="muted" style={{ marginTop: 6, fontWeight: 700, fontSize: 13 }}>
           Обмен: 100 000 coins = 1 crystal; 100 crystals = 1 TON.
-          TON на балансе здесь — это "внутри приложения" (для вывода). Покупки за TON (буст/5 уровень) — отдельная оплата (пока заглушка).
+          <br />
+          🔷 TON здесь — это баланс <b>внутри приложения</b> (для вывода). Покупки за TON (буст/5 уровень) — отдельная оплата (пока заглушка).
         </div>
       </div>
 
-      <div className="card" style={{ padding: 14 }}>
-        <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <span className="pill">🪙 {fmtBig(user.coins)} coins</span>
-          <span className="pill">💎 {fmtBig(user.crystals)} crystals</span>
-          <span className="pill">🔷 {user.tonBalance} TON</span>
-          <span className="pill">⚡ {user.energy}/{user.energyMax}</span>
+      {/* Balances */}
+      <div className="card topCard">
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div className="avatar">W</div>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontWeight: 900, fontSize: 16, letterSpacing: "-0.1px" }}>Твои балансы</div>
+            <div className="muted" style={{ marginTop: 3, fontWeight: 700, fontSize: 12 }}>
+              Энергия и ресурсы в одном месте
+            </div>
+          </div>
         </div>
+
+        <span className="pill">⚡ {user.energy}/{user.energyMax}</span>
       </div>
 
       <div className="card" style={{ padding: 14 }}>
-        <div style={{ fontWeight: 900 }}>Буст энергии</div>
-        <div className="muted" style={{ marginTop: 6, fontWeight: 600 }}>
-          Полная энергия (100) за <b>1 TON</b>. Кулдаун: 6 часов.
+        <div className="balanceRow">
+          <div className="balanceItem">🪙 {fmtBig(user.coins)} coins</div>
+          <div className="balanceItem">💎 {fmtBig(user.crystals)} crystals</div>
+          <div className="balanceItem">🔷 {user.tonBalance} TON</div>
+        </div>
+      </div>
+
+      {/* Boost */}
+      <div className="card" style={{ padding: 14 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+          <div>
+            <div style={{ fontWeight: 900, fontSize: 18, letterSpacing: "-0.1px" }}>Буст энергии</div>
+            <div className="muted" style={{ marginTop: 6, fontWeight: 700, fontSize: 13 }}>
+              Полная энергия (100) за <b>1 TON</b>. Кулдаун: 6 часов.
+            </div>
+          </div>
+          <span className="pill">{boostReady ? "✅ доступно" : "⏳ кулдаун"}</span>
         </div>
 
         {!boostReady ? (
-          <div className="muted" style={{ marginTop: 8, fontWeight: 700 }}>
+          <div className="muted" style={{ marginTop: 10, fontWeight: 800, fontSize: 12 }}>
             Доступно после: {new Date(boostCooldown).toLocaleString()}
           </div>
         ) : null}
@@ -124,16 +156,22 @@ export default function Wallet() {
         </button>
       </div>
 
+      {/* Exchange: coins -> crystals */}
       <div className="card" style={{ padding: 14 }}>
-        <div style={{ fontWeight: 900 }}>Coins → Crystals</div>
-        <div className="muted" style={{ marginTop: 6, fontWeight: 600 }}>
-          Ты получишь: <b>{coinsToCrystals}</b> 💎 &nbsp;•&nbsp; нужно: <b>{fmtBig(coinsNeed.toString())}</b> 🪙
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+          <div style={{ fontWeight: 900, fontSize: 18, letterSpacing: "-0.1px" }}>Coins → Crystals</div>
+          <span className="pill">💎 +{coinsToCrystals}</span>
         </div>
-        <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
+
+        <div className="muted" style={{ marginTop: 8, fontWeight: 700 }}>
+          Нужно: <b>{fmtBig(coinsNeed.toString())}</b> 🪙
+        </div>
+
+        <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
           <input
             value={coinsToCrystals}
             onChange={(e) => setCoinsToCrystals(clampInt(Number(e.target.value || 1), 1, 1_000_000))}
-            style={{ flex: 1, padding: 12, borderRadius: 12, border: "1px solid rgba(0,0,0,0.12)" }}
+            style={{ ...inputStyle, flex: 1 }}
             type="number"
             min={1}
           />
@@ -143,16 +181,22 @@ export default function Wallet() {
         </div>
       </div>
 
+      {/* Exchange: crystals -> ton */}
       <div className="card" style={{ padding: 14 }}>
-        <div style={{ fontWeight: 900 }}>Crystals → TON</div>
-        <div className="muted" style={{ marginTop: 6, fontWeight: 600 }}>
-          Ты получишь: <b>{crystalsToTon}</b> 🔷 &nbsp;•&nbsp; нужно: <b>{fmtBig(crystalsNeed.toString())}</b> 💎
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+          <div style={{ fontWeight: 900, fontSize: 18, letterSpacing: "-0.1px" }}>Crystals → TON</div>
+          <span className="pill">🔷 +{crystalsToTon}</span>
         </div>
-        <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
+
+        <div className="muted" style={{ marginTop: 8, fontWeight: 700 }}>
+          Нужно: <b>{fmtBig(crystalsNeed.toString())}</b> 💎
+        </div>
+
+        <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
           <input
             value={crystalsToTon}
             onChange={(e) => setCrystalsToTon(clampInt(Number(e.target.value || 1), 1, 1_000_000))}
-            style={{ flex: 1, padding: 12, borderRadius: 12, border: "1px solid rgba(0,0,0,0.12)" }}
+            style={{ ...inputStyle, flex: 1 }}
             type="number"
             min={1}
           />
@@ -162,34 +206,44 @@ export default function Wallet() {
         </div>
       </div>
 
+      {/* Withdraw */}
       <div className="card" style={{ padding: 14 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <div style={{ fontWeight: 900 }}>Вывод TON</div>
-          <span className="pill" style={{ background: locked ? "rgba(255, 107, 107, 0.18)" : "rgba(54, 211, 153, 0.18)" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+          <div style={{ fontWeight: 900, fontSize: 18, letterSpacing: "-0.1px" }}>Вывод TON</div>
+          <span
+            className="pill"
+            style={{
+              background: locked ? "rgba(255, 77, 79, 0.12)" : "rgba(31, 184, 106, 0.12)",
+              borderColor: locked ? "rgba(255, 77, 79, 0.22)" : "rgba(31, 184, 106, 0.22)",
+              color: locked ? "rgba(180, 25, 30, 0.95)" : "rgba(10, 110, 60, 0.95)",
+            }}
+          >
             {locked ? "🔒 закрыт" : "✅ открыт"}
           </span>
         </div>
 
-        <div className="muted" style={{ marginTop: 6, fontWeight: 600 }}>
+        <div className="muted" style={{ marginTop: 8, fontWeight: 700 }}>
           Минимум 1 TON, максимум 25 TON, 1 раз в 24 часа.
         </div>
 
         {locked ? (
-          <div className="muted" style={{ marginTop: 8, fontWeight: 700 }}>
-            Условие: приведи 1 друга, который выполнит 50 выстрелов и 20 попаданий за 24 часа. У тебя: <b>{user.activeReferralCount}</b>
-            <div style={{ marginTop: 10 }}>
-              <button className="btn" style={{ background: "rgba(0,0,0,0.06)", width: "100%" }} onClick={() => nav("/profile")}>
+          <div className="notice" style={{ marginTop: 12 }}>
+            Условие: приведи 1 друга, который выполнит 50 выстрелов и 20 попаданий за 24 часа.
+            <br />
+            Активных рефералов: <b>{user.activeReferralCount}</b>
+            <div style={{ marginTop: 12 }}>
+              <button className="btn btnSoft" style={{ width: "100%" }} onClick={() => nav("/profile")}>
                 Открыть реферальную ссылку
               </button>
             </div>
           </div>
         ) : null}
 
-        <div style={{ display: "flex", gap: 10, marginTop: 10, opacity: locked ? 0.55 : 1 }}>
+        <div style={{ display: "flex", gap: 10, marginTop: 12, opacity: locked ? 0.55 : 1 }}>
           <input
             value={withdrawAmount}
             onChange={(e) => setWithdrawAmount(Math.max(1, Math.min(25, Number(e.target.value || 1))))}
-            style={{ width: 120, padding: 12, borderRadius: 12, border: "1px solid rgba(0,0,0,0.12)" }}
+            style={{ ...inputStyle, width: 120 }}
             type="number"
             min={1}
             max={25}
@@ -200,7 +254,7 @@ export default function Wallet() {
             value={withdrawAddr}
             onChange={(e) => setWithdrawAddr(e.target.value)}
             placeholder="TON-адрес"
-            style={{ flex: 1, padding: 12, borderRadius: 12, border: "1px solid rgba(0,0,0,0.12)" }}
+            style={{ ...inputStyle, flex: 1 }}
             disabled={locked}
           />
         </div>
@@ -217,12 +271,23 @@ export default function Wallet() {
           onClose={() => setOverlay(null)}
           action={
             overlay.title === "Оплата TON (тест)"
-              ? { label: "Симулировать успех", onClick: () => { setOverlay(null); void buyBoostMock(); } }
+              ? {
+                  label: "Симулировать успех",
+                  onClick: () => {
+                    setOverlay(null);
+                    void buyBoostMock();
+                  },
+                }
               : undefined
           }
           secondaryAction={
             overlay.title === "Оплата TON (тест)"
-              ? { label: "Симулировать ошибку", onClick: () => { setOverlay({ title: "Оплата отменена", text: "Симуляция: платёж не прошёл." }); } }
+              ? {
+                  label: "Симулировать ошибку",
+                  onClick: () => {
+                    setOverlay({ title: "Оплата отменена", text: "Симуляция: платёж не прошёл." });
+                  },
+                }
               : undefined
           }
         />
