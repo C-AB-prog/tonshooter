@@ -1,5 +1,10 @@
-import React from "react";
+import React, { useEffect } from "react";
 import "../styles/components.css";
+
+type OverlayAction = {
+  label: string;
+  onClick: () => void;
+};
 
 export function Overlay({
   title,
@@ -11,26 +16,54 @@ export function Overlay({
   title: string;
   text: string;
   onClose: () => void;
-  action?: { label: string; onClick: () => void };
-  secondaryAction?: { label: string; onClick: () => void };
+  action?: OverlayAction;
+  secondaryAction?: OverlayAction;
 }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
   return (
-    <div className="overlay" onClick={onClose}>
-      <div className="overlayCard" onClick={(e) => e.stopPropagation()}>
-        <div style={{ fontWeight: 800, fontSize: 18 }}>{title}</div>
-        <div style={{ marginTop: 10, color: "#55647a", fontWeight: 600 }}>{text}</div>
-        <div style={{ marginTop: 14, display: "flex", gap: 10, justifyContent: "flex-end" }}>
-          <button className="btn" onClick={onClose}>Закрыть</button>
-          {secondaryAction ? (
-            <button className="btn" style={{ background: "rgba(0,0,0,0.06)" }} onClick={secondaryAction.onClick}>
-              {secondaryAction.label}
-            </button>
-          ) : null}
+    <div className="overlay" role="dialog" aria-modal="true" aria-label={title}>
+      <div className="overlayCard">
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontWeight: 900, fontSize: 18, letterSpacing: "-0.1px" }}>{title}</div>
+            <div className="muted" style={{ marginTop: 8, fontWeight: 700, whiteSpace: "pre-wrap" }}>
+              {text}
+            </div>
+          </div>
+
+          <button
+            className="btn btnSoft"
+            onClick={onClose}
+            style={{ width: 44, minWidth: 44, padding: 0, borderRadius: 14 }}
+            aria-label="Закрыть"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div style={{ display: "grid", gap: 10, marginTop: 16 }}>
           {action ? (
-            <button className="btn btnPrimary" onClick={action.onClick}>
+            <button className="btn btnPrimary" onClick={action.onClick} style={{ width: "100%" }}>
               {action.label}
             </button>
           ) : null}
+
+          {secondaryAction ? (
+            <button className="btn btnSoft" onClick={secondaryAction.onClick} style={{ width: "100%" }}>
+              {secondaryAction.label}
+            </button>
+          ) : null}
+
+          <button className="btn btnSoft" onClick={onClose} style={{ width: "100%" }}>
+            Закрыть
+          </button>
         </div>
       </div>
     </div>
