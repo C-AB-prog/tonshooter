@@ -98,7 +98,6 @@ export default function Shoot() {
       const p = pingPong01(t * session.speed);
       setPos(p);
 
-      // Optional moving green zone (starts after 3 hits sometimes).
       if (session.zoneMoves) {
         const elapsedMs = performance.now() - (startedPerf.current ?? performance.now());
         const phase = session.zonePhase ?? 0;
@@ -116,7 +115,6 @@ export default function Shoot() {
 
   if (!user || !token) return null;
   const tok = token;
-  const u = user;
 
   async function startAttempt() {
     setBusy(true);
@@ -193,10 +191,8 @@ export default function Shoot() {
 
       setResult({ hit: r.hit, coins: r.coinsAward });
 
-      // обновим профиль, чтобы энергия/балансы менялись сразу, а не “после перезагрузки”
       await refresh();
 
-      // After a miss show a small modal with how many hits were made before this miss.
       if (!r.hit) {
         const hitsBeforeMiss = session.difficulty;
         setOverlay({
@@ -237,34 +233,44 @@ export default function Shoot() {
   }
 
   const costText = session ? `${session.energyCost} энергии` : "—";
-
   const boostCooldown = user.boostCooldownUntil ? new Date(user.boostCooldownUntil).getTime() : 0;
   const boostReady = boostCooldown <= Date.now();
 
   return (
     <div className="safe col">
+      {/* Header */}
       <div className="card" style={{ padding: 14 }}>
         <div className="h2">Стрельба</div>
-        <div className="muted" style={{ marginTop: 6, fontWeight: 700 }}>
-          Цена выстрела: {costText}. Нажми «Огонь», когда бегунок в зелёной зоне.
+        <div className="muted" style={{ marginTop: 6, fontWeight: 700, fontSize: 13 }}>
+          Нажми «Огонь», когда бегунок в зелёной зоне.
+        </div>
+
+        <div className="balanceRow" style={{ marginTop: 12 }}>
+          <div className="balanceItem">Цена: {costText}</div>
+          <div className="balanceItem">
+            Энергия: <span style={{ fontWeight: 900 }}>{user.energy}</span>/{user.energyMax}
+          </div>
         </div>
       </div>
 
+      {/* Game card */}
       <div className="card" style={{ padding: 14 }}>
+        {/* Aim bar */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
-          <div className="pill">Цена: {costText}</div>
-          <div className="pill">Энергия: {user.energy}/{user.energyMax}</div>
+          <span className="pill">Скорость: {session ? session.speed : "—"}</span>
+          <span className="pill">Сложность: {session ? session.difficulty : "—"}</span>
         </div>
 
         <div style={{ marginTop: 14 }}>
           <div
             style={{
               position: "relative",
-              height: 22,
+              height: 26,
               borderRadius: 999,
-              background: "#e7ebf3", // серая зона промаха
-              border: "1px solid rgba(0,0,0,0.06)",
+              background: "rgba(15,23,42,0.06)", // серая зона промаха (в стиле темы)
+              border: "1px solid rgba(15,23,42,0.10)",
               overflow: "hidden",
+              boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.35)",
             }}
           >
             {/* green hit zone */}
@@ -275,7 +281,7 @@ export default function Shoot() {
                 width: `${Math.max(0, zone.width) * 100}%`,
                 top: 0,
                 bottom: 0,
-                background: "rgba(33,193,107,0.28)",
+                background: "linear-gradient(90deg, rgba(31,184,106,0.18), rgba(31,184,106,0.30))",
               }}
             />
 
@@ -283,75 +289,79 @@ export default function Shoot() {
             <div
               style={{
                 position: "absolute",
-                left: `calc(${pos * 100}% - 8px)`,
-                top: 2,
-                width: 16,
-                height: 16,
-                borderRadius: 8,
+                left: `calc(${pos * 100}% - 9px)`,
+                top: 3,
+                width: 18,
+                height: 18,
+                borderRadius: 9,
                 background: "linear-gradient(180deg, #ffffff, #dbe6ff)",
-                border: "1px solid rgba(0,0,0,0.12)",
-                boxShadow: "0 6px 14px rgba(0,0,0,0.12)",
+                border: "1px solid rgba(15,23,42,0.16)",
+                boxShadow: "0 10px 22px rgba(15,23,42,0.14)",
               }}
             />
           </div>
 
+          {/* Result notice */}
           {result ? (
-            <div style={{ marginTop: 12 }} className="notice">
+            <div className="notice" style={{ marginTop: 12 }}>
               {result.hit ? `Попадание! +${fmtBigintString(result.coins)} Coins` : "Промах. Сложность сброшена."}
             </div>
-          ) : null}
+          ) : (
+            <div className="muted" style={{ marginTop: 10, fontWeight: 700, fontSize: 12, textAlign: "center" }}>
+              Подсказка: лучше стрелять ближе к центру зелёной зоны.
+            </div>
+          )}
 
+          {/* Primary actions */}
           <button
-            className="btn btnPrimary"
-            style={{ width: "100%", marginTop: 12, padding: "16px 14px", fontSize: 16 }}
+            className="btn btnPrimary bigAction"
             disabled={busy || !session}
             onClick={fire}
+            style={{ marginTop: 14 }}
           >
             ОГОНЬ
           </button>
 
-          <button
-            className="btn"
-            style={{ width: "100%", marginTop: 10 }}
-            disabled={busy}
-            onClick={startAttempt}
-          >
-            Обновить
-          </button>
-
-          <button
-            className="btn"
-            style={{ width: "100%", marginTop: 10, background: "rgba(0,0,0,0.06)" }}
-            disabled={busy}
-            onClick={() => nav("/wallet")}
-          >
-            Кошелёк / Буст
-          </button>
-
-          <button
-            className="btn btnPrimary"
-            style={{ width: "100%", marginTop: 10 }}
-            disabled={busy || !boostReady}
-            onClick={() =>
-              setOverlay({
-                title: "Оплата TON (тест)",
-                text: "Покупки за TON делаются через TonConnect. Пока стоит заглушка: можно симулировать успешную оплату и получить 100 энергии.",
-              })
-            }
-          >
-            Купить буст • 🔷 1 TON
-          </button>
-
-          {user.isAdmin ? (
-            <button
-              className="btn btnGreen"
-              style={{ width: "100%", marginTop: 10 }}
-              disabled={busy}
-              onClick={adminFillEnergy}
-            >
-              (ADMIN) Пополнить энергию до 100
+          <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+            <button className="btn btnSoft" disabled={busy} onClick={startAttempt}>
+              Новая попытка
             </button>
-          ) : null}
+
+            <button className="btn btnSoft" disabled={busy} onClick={() => nav("/wallet")}>
+              Кошелёк / Буст
+            </button>
+
+            <button
+              className="btn btnPrimary"
+              disabled={busy || !boostReady}
+              onClick={() =>
+                setOverlay({
+                  title: "Оплата TON (тест)",
+                  text: "Покупки за TON делаются через TonConnect. Пока стоит заглушка: можно симулировать успешную оплату и получить 100 энергии.",
+                })
+              }
+              style={{ width: "100%" }}
+            >
+              Купить буст • 🔷 1 TON
+            </button>
+
+            {!boostReady ? (
+              <div className="muted" style={{ fontSize: 12, fontWeight: 700, textAlign: "center" }}>
+                Буст на кулдауне. Попробуй позже.
+              </div>
+            ) : null}
+
+            {user.isAdmin ? (
+              <button
+                className="btn btnGreen"
+                disabled={busy}
+                onClick={adminFillEnergy}
+                style={{ width: "100%" }}
+              >
+                (ADMIN) Пополнить энергию до 100
+              </button>
+            ) : null}
+          </div>
         </div>
       </div>
 
@@ -362,14 +372,32 @@ export default function Shoot() {
           onClose={() => setOverlay(null)}
           action={
             overlay.title === "Оплата TON (тест)"
-              ? { label: "Симулировать успех", onClick: () => { setOverlay(null); void buyBoost(); } }
+              ? {
+                  label: "Симулировать успех",
+                  onClick: () => {
+                    setOverlay(null);
+                    void buyBoost();
+                  },
+                }
               : overlay.title === "Нет энергии"
-                ? { label: "Купить буст", onClick: () => { setOverlay(null); void buyBoost(); } }
+                ? {
+                    label: "Купить буст",
+                    onClick: () => {
+                      setOverlay(null);
+                      void buyBoost();
+                    },
+                  }
                 : undefined
           }
           secondaryAction={
             overlay.title === "Оплата TON (тест)"
-              ? { label: "Симулировать ошибку", onClick: () => { setOverlay(null); setOverlay({ title: "Оплата отменена", text: "Симуляция: платеж не прошёл." }); } }
+              ? {
+                  label: "Симулировать ошибку",
+                  onClick: () => {
+                    setOverlay(null);
+                    setOverlay({ title: "Оплата отменена", text: "Симуляция: платеж не прошёл." });
+                  },
+                }
               : undefined
           }
         />

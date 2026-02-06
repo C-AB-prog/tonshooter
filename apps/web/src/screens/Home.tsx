@@ -49,27 +49,31 @@ export default function Home() {
     const nextLevel = level + 1;
     const usesTon = nextLevel === 5;
 
+    const priceLabel = isMax
+      ? "Максимальный уровень"
+      : `Улучшить • ${usesTon ? "🔷 2 TON" : `🪙 ${fmt(String(prices.weapon[level] ?? 0))}`}`;
+
     return (
       <div className="card upgradeCard">
         <div className="cardHead">
-          <div className="cardTitle">{title}</div>
+          <div>
+            <div className="cardTitle">{title}</div>
+            <div className="muted" style={{ marginTop: 4, fontSize: 13 }}>
+              Следующий уровень: {isMax ? "—" : nextLevel}
+            </div>
+          </div>
           <span className="pill">Ур. {level}</span>
         </div>
 
         <div className="imgStub">{title.toUpperCase()}</div>
 
         <button
-          className={`btn ${isMax ? "btnDisabled" : "btnGreen"}`}
+          className={`btn ${isMax ? "btnSoft" : (usesTon ? "btnPrimary" : "btnGreen")}`}
           disabled={isMax}
           onClick={onUpgrade}
+          style={{ width: "100%" }}
         >
-          {isMax
-            ? "Максимальный уровень"
-            : `Улучшить • ${
-                usesTon
-                  ? "🔷 2 TON"
-                  : `🪙 ${fmt(String(prices.weapon[level] ?? 0))}`
-              }`}
+          {priceLabel}
         </button>
       </div>
     );
@@ -77,14 +81,25 @@ export default function Home() {
 
   return (
     <div className="safe col">
-      <div className="row">
-        {renderUpgradeCard("Оружие", user.weaponLevel, () => upgrade("weapon"))}
-        {renderUpgradeCard("Полигон", user.rangeLevel, () => upgrade("range"))}
+      <div className="col" style={{ gap: 10 }}>
+        <h1 className="h1">Главная</h1>
+        <div className="muted" style={{ fontSize: 13 }}>
+          Улучшай параметры и переходи в бой
+        </div>
+      </div>
+
+      <div className="col" style={{ gap: 10 }}>
+        <div className="h2">Улучшения</div>
+
+        <div className="row" style={{ alignItems: "stretch" }}>
+          {renderUpgradeCard("Оружие", user.weaponLevel, () => upgrade("weapon"))}
+          {renderUpgradeCard("Полигон", user.rangeLevel, () => upgrade("range"))}
+        </div>
       </div>
 
       <div className="card tasksCard">
         <div>
-          <div style={{ fontWeight: 800, fontSize: 18 }}>Задания</div>
+          <div style={{ fontWeight: 900, fontSize: 18, letterSpacing: "-0.1px" }}>Задания</div>
           <div className="muted" style={{ marginTop: 4, fontSize: 13 }}>
             Выполняй задания — получай награды
           </div>
@@ -94,9 +109,14 @@ export default function Home() {
         </button>
       </div>
 
-      <button className="btn btnPrimary bigAction" onClick={() => nav("/shoot")}>
-        ОГОНЬ
-      </button>
+      <div className="col" style={{ gap: 10 }}>
+        <button className="btn btnPrimary bigAction" onClick={() => nav("/shoot")}>
+          ОГОНЬ
+        </button>
+        <div className="muted" style={{ textAlign: "center", fontSize: 12 }}>
+          В бою тратится энергия. Улучшения увеличивают эффективность.
+        </div>
+      </div>
 
       {overlay && (
         <Overlay

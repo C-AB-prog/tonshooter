@@ -1,85 +1,111 @@
+/* =========================================================
+   Components styling (ONLY design)
+   ========================================================= */
+
 .topCard{
-  padding: 12px 14px;
+  padding: 14px 14px;
   display:flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
+
 .avatar{
-  width: 42px; height: 42px;
-  border-radius: 12px;
-  background: linear-gradient(180deg, #dbe6ff, #c7d7ff);
+  width: 44px; height: 44px;
+  border-radius: 14px;
+  background: radial-gradient(120% 120% at 20% 10%, #eaf1ff 0%, #d3e1ff 55%, #c3d7ff 100%);
+  border: 1px solid rgba(47,110,234,0.18);
   display:grid; place-items:center;
-  font-weight: 800;
+  font-weight: 900;
   color: #1b3f9a;
+  box-shadow: 0 10px 22px rgba(47,110,234,0.10);
 }
+
 .balanceRow{
   display:flex;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
   flex-wrap: wrap;
 }
+
 .balanceItem{
   display:flex;
   gap: 8px;
   align-items: center;
-  padding: 6px 10px;
+
+  padding: 7px 10px;
   border-radius: 999px;
-  background: rgba(255,255,255,0.9);
-  border: 1px solid var(--stroke);
-  font-weight: 700;
+  background: rgba(255,255,255,0.85);
+  border: 1px solid rgba(15,23,42,0.08);
+
+  font-weight: 800;
   font-size: 13px;
+  color: rgba(15,23,42,0.86);
 }
+
+/* Energy */
 .energyCard{
-  padding: 10px 12px;
+  padding: 12px 14px;
 }
+
 .energyBar{
-  height: 10px;
+  height: 12px;
   border-radius: 999px;
-  background: #e7ebf3;
+  background: rgba(15,23,42,0.06);
   overflow:hidden;
-  border: 1px solid var(--stroke);
+  border: 1px solid rgba(15,23,42,0.08);
 }
+
 .energyFill{
   height: 100%;
-  background: linear-gradient(90deg, #3fe27a, #1bc07b);
+  background: linear-gradient(90deg, #36de7a, #1abf7b);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,0.28);
 }
+
 .energyText{
-  margin-top: 8px;
+  margin-top: 10px;
   text-align: center;
-  font-weight: 600;
+  font-weight: 800;
   font-size: 13px;
-  color: #55647a;
+  color: rgba(15,23,42,0.62);
 }
+
+/* Upgrade cards */
 .upgradeCard{
-  padding: 12px;
+  padding: 14px;
   flex: 1;
   display:flex;
   flex-direction: column;
   gap: 12px;
   min-height: 190px;
 }
+
 .cardHead{
   display:flex;
   justify-content: space-between;
   align-items: center;
   gap: 10px;
 }
+
 .cardTitle{
   font-size: 18px;
-  font-weight: 800;
+  font-weight: 900;
+  letter-spacing: -0.1px;
 }
+
 .imgStub{
   flex: 1;
-  border-radius: 14px;
-  border: 1px dashed rgba(0,0,0,0.10);
-  background: rgba(0,0,0,0.02);
+  border-radius: 16px;
+  border: 1px dashed rgba(15,23,42,0.16);
+  background: rgba(15,23,42,0.025);
   display:grid;
   place-items:center;
-  color: rgba(0,0,0,0.35);
-  font-weight: 700;
+  color: rgba(15,23,42,0.40);
+  font-weight: 800;
   font-size: 12px;
 }
+
+/* Tasks */
 .tasksCard{
   padding: 14px;
   display:flex;
@@ -87,36 +113,46 @@
   align-items: center;
   gap: 12px;
 }
+
+/* Big CTA button */
 .bigAction{
   margin-top: 10px;
   width: 100%;
-  padding: 18px 16px;
+  min-height: 56px;
+  padding: 0 18px;
   border-radius: 18px;
   font-size: 18px;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.2px;
 }
+
+/* Notice */
 .notice{
-  padding: 12px;
-  border-radius: 14px;
-  border: 1px solid rgba(47,110,234,0.25);
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(47,110,234,0.20);
   background: rgba(47,110,234,0.08);
-  color: #1b3f9a;
-  font-weight: 600;
+  color: #143a8c;
+  font-weight: 750;
   font-size: 13px;
 }
+
+/* Overlay / modal */
 .overlay{
   position: fixed;
   inset: 0;
-  background: rgba(15, 20, 30, 0.36);
+  background: rgba(15, 23, 42, 0.40);
+  backdrop-filter: blur(10px);
   display:grid;
   place-items:center;
   padding: 20px;
+  z-index: 1000;
 }
+
 .overlayCard{
   width: min(420px, 100%);
-  background: white;
-  border-radius: 18px;
+  background: rgba(255,255,255,0.98);
+  border-radius: 20px;
   padding: 16px;
-  border: 1px solid var(--stroke);
-  box-shadow: var(--shadow);
+  border: 1px solid rgba(15,23,42,0.10);
+  box-shadow: 0 18px 60px rgba(15,23,42,0.22);
 }

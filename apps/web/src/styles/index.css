@@ -1,65 +1,142 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
 
+/* =========================================================
+   Design tokens (ONLY CSS, no logic)
+   ========================================================= */
 :root{
-  --bg: #f3f5f9;
-  --card: #ffffff;
-  --muted: #a0a7b4;
-  --text: #1b2430;
-  --stroke: rgba(0,0,0,0.06);
+  /* Spacing */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
 
+  /* Sizes */
+  --tap: 44px; /* minimum tap target for Telegram */
+
+  /* Colors (light, clean, "product" look) */
+  --bg: #f6f7fb;
+  --card: rgba(255,255,255,0.98);
+
+  --text: #0f172a;
+  --muted: #64748b;
+  --muted2: #94a3b8;
+
+  --stroke: rgba(15, 23, 42, 0.08);
+  --stroke2: rgba(15, 23, 42, 0.12);
+
+  /* Brand */
   --blue: #2f6eea;
-  --blue2: #347cff;
-  --green: #21c16b;
-  --green2: #5eeaa2;
+  --blue2: #3a7cff;
 
-  --radius: 16px;
-  --shadow: 0 8px 28px rgba(17, 24, 39, 0.12);
+  --green: #1fb86a;
+  --green2: #53e7a6;
+
+  --danger: #ff4d4f;
+  --warning: #f5c518;
+
+  /* Radius & Shadows */
+  --radius: 18px;
+  --radius2: 14px;
+
+  --shadow-1: 0 6px 22px rgba(15, 23, 42, 0.08);
+  --shadow-2: 0 16px 44px rgba(15, 23, 42, 0.14);
 }
 
 *{ box-sizing: border-box; }
-html, body { height: 100%; margin: 0; font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: var(--bg); color: var(--text); }
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* Better touch + text rendering */
+body{
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 button{ font-family: inherit; }
-
 a{ color: inherit; text-decoration: none; }
+:focus-visible{
+  outline: 3px solid rgba(47,110,234,0.25);
+  outline-offset: 2px;
+}
 
-.safe{ padding: 16px; padding-bottom: 90px; max-width: 420px; margin: 0 auto; }
+/* Container */
+.safe{
+  padding: var(--sp-4);
+  padding-top: max(var(--sp-4), env(safe-area-inset-top));
+  padding-left: max(var(--sp-4), env(safe-area-inset-left));
+  padding-right: max(var(--sp-4), env(safe-area-inset-right));
+  padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  max-width: 420px;
+  margin: 0 auto;
+}
 
+/* Base card */
 .card{
   background: var(--card);
   border: 1px solid var(--stroke);
   border-radius: var(--radius);
-  box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+  box-shadow: var(--shadow-1);
 }
 
-.row{ display:flex; gap: 12px; }
-.col{ display:flex; flex-direction: column; gap: 12px; }
+/* Layout helpers */
+.row{ display:flex; gap: var(--sp-3); }
+.col{ display:flex; flex-direction: column; gap: var(--sp-3); }
 
-.h1{ font-size: 22px; font-weight: 700; margin: 0; }
-.h2{ font-size: 18px; font-weight: 700; margin: 0; }
+/* Headings */
+.h1{ font-size: 22px; font-weight: 800; margin: 0; letter-spacing: -0.2px; }
+.h2{ font-size: 18px; font-weight: 800; margin: 0; letter-spacing: -0.1px; }
 
 .muted{ color: var(--muted); }
 
+/* Buttons */
 .btn{
   border: 0;
-  border-radius: 14px;
-  padding: 12px 14px;
-  font-weight: 700;
+  border-radius: var(--radius2);
+  min-height: var(--tap);
+  padding: 0 16px;
+  font-weight: 800;
   cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform .06s ease, filter .12s ease, box-shadow .12s ease, opacity .12s ease, background .12s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
-.btn:disabled{ opacity: 0.5; cursor: not-allowed; }
+.btn:active{ transform: scale(0.99); }
+.btn:disabled{ opacity: 0.55; cursor: not-allowed; transform: none; }
 
 .btnPrimary{
   background: linear-gradient(180deg, var(--blue2), var(--blue));
   color: white;
-  box-shadow: 0 8px 18px rgba(47,110,234,0.26);
+  box-shadow: 0 10px 22px rgba(47,110,234,0.22);
 }
+.btnPrimary:hover{ filter: brightness(1.02); }
 
 .btnGreen{
   background: linear-gradient(180deg, var(--green2), var(--green));
   color: white;
-  box-shadow: 0 8px 18px rgba(33,193,107,0.26);
+  box-shadow: 0 10px 22px rgba(31,184,106,0.18);
+}
+.btnGreen:hover{ filter: brightness(1.02); }
+
+/* Soft button (used in overlays, etc.) */
+.btnSoft{
+  background: rgba(15,23,42,0.05);
+  color: var(--text);
+  border: 1px solid var(--stroke);
 }
 
+/* Pills / badges */
 .pill{
   display: inline-flex;
   align-items: center;
@@ -67,42 +144,67 @@ a{ color: inherit; text-decoration: none; }
   padding: 6px 10px;
   border-radius: 999px;
   border: 1px solid var(--stroke);
-  background: rgba(255,255,255,0.7);
+  background: rgba(255,255,255,0.85);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
+  color: rgba(15,23,42,0.84);
 }
 
+/* Bottom navigation */
 .bottomNav{
   position: fixed;
   left: 0; right: 0; bottom: 0;
-  background: rgba(255,255,255,0.92);
-  backdrop-filter: blur(10px);
-  border-top: 1px solid var(--stroke);
+  padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
   display: flex;
   justify-content: center;
-  padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+
+  background: rgba(246,247,251,0.82);
+  backdrop-filter: blur(14px);
+  border-top: 1px solid rgba(15,23,42,0.06);
+  z-index: 50;
 }
+
 .bottomNavInner{
   width: min(420px, 100%);
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   gap: 8px;
+
+  background: rgba(255,255,255,0.92);
+  border: 1px solid rgba(15,23,42,0.07);
+  border-radius: 18px;
+  padding: 8px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.10);
 }
+
 .navItem{
   display:flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 4px;
+
+  min-height: 56px;
   padding: 8px 6px;
-  border-radius: 12px;
+  border-radius: 14px;
+
   font-size: 11px;
-  color: #6b778a;
+  font-weight: 700;
+  color: rgba(15,23,42,0.55);
+
+  transition: background .12s ease, color .12s ease, transform .06s ease;
+  -webkit-tap-highlight-color: transparent;
 }
+.navItem:active{ transform: scale(0.99); }
+
 .navItemActive{
   color: var(--blue);
   background: rgba(47,110,234,0.10);
+  box-shadow: inset 0 0 0 1px rgba(47,110,234,0.14);
 }
+
 .navIcon{
   width: 22px; height: 22px;
   display:grid; place-items:center;
+  filter: saturate(1.05);
 }

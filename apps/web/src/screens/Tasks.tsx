@@ -50,11 +50,16 @@ export default function Tasks() {
       setBusyId(null);
     } catch (e: any) {
       setBusyId(null);
-      if (e?.code === "not_subscribed") setOverlay({ title: "Не подписан", text: "Сначала подпишись на канал, затем нажми «Получить»." });
-      else if (e?.code === "need_open_first") setOverlay({ title: "Сначала перейди", text: "Нужно нажать «Перейти» и только потом можно получить награду." });
-      else if (e?.code === "already_claimed") setOverlay({ title: "Уже получено", text: "Награда за это задание уже получена." });
-      else if (e?.code === "task_limit_reached") setOverlay({ title: "Лимит выполнен", text: "Лимит по этой рекламе уже набран. Попробуй другое задание." });
-      else if (e?.code === "bot_suspected") setOverlay({ title: "Подозрение на бота", text: "Слишком быстрые действия. Попробуй позже." });
+      if (e?.code === "not_subscribed")
+        setOverlay({ title: "Не подписан", text: "Сначала подпишись на канал, затем нажми «Получить»." });
+      else if (e?.code === "need_open_first")
+        setOverlay({ title: "Сначала перейди", text: "Нужно нажать «Перейти» и только потом можно получить награду." });
+      else if (e?.code === "already_claimed")
+        setOverlay({ title: "Уже получено", text: "Награда за это задание уже получена." });
+      else if (e?.code === "task_limit_reached")
+        setOverlay({ title: "Лимит выполнен", text: "Лимит по этой рекламе уже набран. Попробуй другое задание." });
+      else if (e?.code === "bot_suspected")
+        setOverlay({ title: "Подозрение на бота", text: "Слишком быстрые действия. Попробуй позже." });
       else setOverlay({ title: "Ошибка сервера", text: "Не удалось получить награду." });
     }
   }
@@ -82,55 +87,80 @@ export default function Tasks() {
 
   return (
     <div className="safe col">
+      {/* Header */}
       <div className="card" style={{ padding: 14 }}>
         <div className="h2">Задания</div>
-        <div className="muted" style={{ marginTop: 6, fontWeight: 600 }}>
+        <div className="muted" style={{ marginTop: 6, fontWeight: 700, fontSize: 13 }}>
           Подписывайся на каналы партнёров и получай награды.
         </div>
       </div>
 
-      {tasks.map((t) => (
-        <div key={t.id} className="card" style={{ padding: 14 }}>
-          <div style={{ fontWeight: 900, fontSize: 16 }}>{t.title}</div>
-          <div className="muted" style={{ marginTop: 6, fontWeight: 600 }}>{t.description}</div>
+      {/* Empty state (only UI, no logic change) */}
+      {tasks.length === 0 ? (
+        <div className="card" style={{ padding: 14 }}>
+          <div style={{ fontWeight: 900, fontSize: 16 }}>Пока нет заданий</div>
+          <div className="muted" style={{ marginTop: 6, fontWeight: 700 }}>
+            Загляни позже — задания обновляются.
+          </div>
+        </div>
+      ) : null}
 
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10, gap: 10 }}>
-            <div className="pill">
-              Награда: {t.rewardType === "COINS" ? `🪙 ${fmtCoins(t.rewardValue)}` : `💎 ${t.rewardValue}`}
+      {/* Tasks */}
+      {tasks.map((t) => {
+        const busy = busyId === t.id;
+
+        return (
+          <div key={t.id} className="card" style={{ padding: 14 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10 }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontWeight: 900, fontSize: 16, letterSpacing: "-0.1px" }}>{t.title}</div>
+                <div className="muted" style={{ marginTop: 6, fontWeight: 700 }}>
+                  {t.description}
+                </div>
+              </div>
+
+              <span className="pill" title="Награда за задание">
+                {t.rewardType === "COINS" ? `🪙 ${fmtCoins(t.rewardValue)}` : `💎 ${t.rewardValue}`}
+              </span>
             </div>
-            <div style={{ display: "flex", gap: 10 }}>
-              <button className="btn" style={{ background: "rgba(0,0,0,0.06)" }} disabled={busyId === t.id} onClick={() => openTask(t)}>
-                Перейти
-              </button>
-              {t.claimed ? (
-                <button className="btn btnGreen" disabled>
-                  Получено
+
+            {/* Hint */}
+            {!t.opened && !t.claimed ? (
+              <div className="notice" style={{ marginTop: 12 }}>
+                Сначала нажми «Перейти», затем вернись и нажми «Получить».
+              </div>
+            ) : null}
+
+            {/* Subscription info */}
+            <div className="muted" style={{ marginTop: 10, fontWeight: 700, fontSize: 13 }}>
+              {t.requireSubscriptionCheck ? "🔒 В этом задании проверяется подписка." : "✅ Это задание засчитывается по клику."}
+            </div>
+
+            {/* Actions */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12, gap: 10 }}>
+              <div className="pill" title="Прогресс по лимиту (инфо)">
+                {t.completedCount}/{t.cap}
+              </div>
+
+              <div style={{ display: "flex", gap: 10 }}>
+                <button className="btn btnSoft" disabled={busy} onClick={() => openTask(t)}>
+                  Перейти
                 </button>
-              ) : (
-                <button className="btn btnGreen" disabled={!t.opened || busyId === t.id} onClick={() => claim(t.id)}>
-                  Получить
-                </button>
-              )}
+
+                {t.claimed ? (
+                  <button className="btn btnGreen" disabled>
+                    Получено
+                  </button>
+                ) : (
+                  <button className="btn btnGreen" disabled={!t.opened || busy} onClick={() => claim(t.id)}>
+                    Получить
+                  </button>
+                )}
+              </div>
             </div>
           </div>
-
-          {!t.opened && !t.claimed ? (
-            <div className="muted" style={{ marginTop: 8, fontWeight: 600 }}>
-              Сначала нажми «Перейти», затем вернись и нажми «Получить».
-            </div>
-          ) : null}
-
-          {t.requireSubscriptionCheck ? (
-            <div className="muted" style={{ marginTop: 6, fontWeight: 600 }}>
-              🔒 В этом задании проверяется подписка.
-            </div>
-          ) : (
-            <div className="muted" style={{ marginTop: 6, fontWeight: 600 }}>
-              ✅ Это задание засчитывается по клику.
-            </div>
-          )}
-        </div>
-      ))}
+        );
+      })}
 
       {overlay ? <Overlay title={overlay.title} text={overlay.text} onClose={() => setOverlay(null)} /> : null}
     </div>
