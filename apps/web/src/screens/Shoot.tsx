@@ -131,22 +131,11 @@ export default function Shoot() {
       setSession(null);
 
       if (e?.code === "no_energy") {
-        setOverlay({
-          title: "Нет энергии",
-          text: "Энергия закончилась. Можно подождать реген или купить буст (1 TON), чтобы восстановить энергию до 100.",
-        });
+        setOverlay({ title: "Нет энергии", text: "Можно купить буст." });
       } else if (e?.code === "bot_suspected") {
-        setOverlay({
-          title: "Подозрение на бота",
-          text: "Слишком быстрые действия. Замедлись и попробуй ещё раз.",
-        });
-      } else if (e?.code === "timeout" || e?.code === "network_error") {
-        setOverlay({
-          title: "Нет связи с сервером",
-          text: "Проверь, что API запущен и Vite proxy настроен на /api → 4000.",
-        });
+        setOverlay({ title: "Слишком быстро", text: "Попробуй позже." });
       } else {
-        setOverlay({ title: "Ошибка", text: "Не удалось начать попытку." });
+        setOverlay({ title: "Ошибка", text: "Не удалось начать." });
       }
     }
   }
@@ -161,12 +150,12 @@ export default function Shoot() {
       }
       await refresh();
       setBusy(false);
-      setOverlay({ title: "Успех", text: "Энергия восстановлена до 100." });
+      setOverlay({ title: "Готово", text: "Энергия 100." });
     } catch (e: any) {
       setBusy(false);
       const code = e?.code;
-      if (code === "boost_cooldown") setOverlay({ title: "Кулдаун", text: "Буст доступен раз в 6 часов." });
-      else if (code === "mock_disabled") setOverlay({ title: "Отключено", text: "На сервере выключен mock-режим оплаты." });
+      if (code === "boost_cooldown") setOverlay({ title: "Кулдаун", text: "Буст раз в 6 часов." });
+      else if (code === "mock_disabled") setOverlay({ title: "Отключено", text: "Mock выключен." });
       else setOverlay({ title: "Ошибка", text: code ?? "boost_buy_failed" });
     }
   }
@@ -175,7 +164,6 @@ export default function Shoot() {
     if (!session) return;
     if (busy) return;
 
-    // стопаем бегунок СРАЗУ, чтобы он оставался “в том месте где нажал”
     running.current = false;
     if (raf.current) cancelAnimationFrame(raf.current);
 
@@ -190,33 +178,16 @@ export default function Shoot() {
       });
 
       setResult({ hit: r.hit, coins: r.coinsAward });
-
       await refresh();
 
-      if (!r.hit) {
-        const hitsBeforeMiss = session.difficulty;
-        setOverlay({
-          title: "Промах",
-          text: `Вы попали ${hitsBeforeMiss} ${hitsBeforeMiss === 1 ? "раз" : hitsBeforeMiss >= 2 && hitsBeforeMiss <= 4 ? "раза" : "раз"} подряд.`,
-        });
-      }
+      if (!r.hit) setOverlay({ title: "Промах", text: "Сложность сброшена." });
 
       setBusy(false);
     } catch (e: any) {
       setBusy(false);
-
-      if (e?.code === "no_energy") {
-        setOverlay({
-          title: "Нет энергии",
-          text: "Энергия закончилась. Можно подождать реген или купить буст (1 TON), чтобы восстановить энергию до 100.",
-        });
-      } else if (e?.code === "bot_suspected") {
-        setOverlay({ title: "Подозрение на бота", text: "Слишком быстрые действия. Замедлись." });
-      } else if (e?.code === "timeout" || e?.code === "network_error") {
-        setOverlay({ title: "Нет связи", text: "Сервер не отвечает. Проверь /api proxy и API." });
-      } else {
-        setOverlay({ title: "Ошибка сервера", text: "Попробуй ещё раз." });
-      }
+      if (e?.code === "no_energy") setOverlay({ title: "Нет энергии", text: "Купить буст?" });
+      else if (e?.code === "bot_suspected") setOverlay({ title: "Слишком быстро", text: "Замедлись." });
+      else setOverlay({ title: "Ошибка", text: "Попробуй ещё раз." });
     }
   }
 
@@ -232,136 +203,79 @@ export default function Shoot() {
     }
   }
 
-  const costText = session ? `${session.energyCost} энергии` : "—";
-  const boostCooldown = user.boostCooldownUntil ? new Date(user.boostCooldownUntil).getTime() : 0;
-  const boostReady = boostCooldown <= Date.now();
-
   return (
     <div className="safe col">
-      {/* Header */}
       <div className="card" style={{ padding: 14 }}>
         <div className="h2">Стрельба</div>
-        <div className="muted" style={{ marginTop: 6, fontWeight: 700, fontSize: 13 }}>
-          Нажми «Огонь», когда бегунок в зелёной зоне.
-        </div>
-
         <div className="balanceRow" style={{ marginTop: 12 }}>
-          <div className="balanceItem">Цена: {costText}</div>
-          <div className="balanceItem">
-            Энергия: <span style={{ fontWeight: 900 }}>{user.energy}</span>/{user.energyMax}
-          </div>
+          <div className="balanceItem">Цена: {session ? session.energyCost : "—"}</div>
+          <div className="balanceItem">⚡ {user.energy}/{user.energyMax}</div>
         </div>
       </div>
 
-      {/* Game card */}
       <div className="card" style={{ padding: 14 }}>
-        {/* Aim bar */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
-          <span className="pill">Скорость: {session ? session.speed : "—"}</span>
-          <span className="pill">Сложность: {session ? session.difficulty : "—"}</span>
-        </div>
-
-        <div style={{ marginTop: 14 }}>
+        <div
+          style={{
+            position: "relative",
+            height: 26,
+            borderRadius: 999,
+            background: "rgba(15,23,42,0.06)",
+            border: "1px solid rgba(15,23,42,0.10)",
+            overflow: "hidden",
+            boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.35)",
+          }}
+        >
           <div
             style={{
-              position: "relative",
-              height: 26,
-              borderRadius: 999,
-              background: "rgba(15,23,42,0.06)", // серая зона промаха (в стиле темы)
-              border: "1px solid rgba(15,23,42,0.10)",
-              overflow: "hidden",
-              boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.35)",
+              position: "absolute",
+              left: `${Math.max(0, zone.left) * 100}%`,
+              width: `${Math.max(0, zone.width) * 100}%`,
+              top: 0,
+              bottom: 0,
+              background: "linear-gradient(90deg, rgba(31,184,106,0.18), rgba(31,184,106,0.30))",
             }}
-          >
-            {/* green hit zone */}
-            <div
-              style={{
-                position: "absolute",
-                left: `${Math.max(0, zone.left) * 100}%`,
-                width: `${Math.max(0, zone.width) * 100}%`,
-                top: 0,
-                bottom: 0,
-                background: "linear-gradient(90deg, rgba(31,184,106,0.18), rgba(31,184,106,0.30))",
-              }}
-            />
+          />
+          <div
+            style={{
+              position: "absolute",
+              left: `calc(${pos * 100}% - 9px)`,
+              top: 3,
+              width: 18,
+              height: 18,
+              borderRadius: 9,
+              background: "linear-gradient(180deg, #ffffff, #dbe6ff)",
+              border: "1px solid rgba(15,23,42,0.16)",
+              boxShadow: "0 10px 22px rgba(15,23,42,0.14)",
+            }}
+          />
+        </div>
 
-            {/* runner */}
-            <div
-              style={{
-                position: "absolute",
-                left: `calc(${pos * 100}% - 9px)`,
-                top: 3,
-                width: 18,
-                height: 18,
-                borderRadius: 9,
-                background: "linear-gradient(180deg, #ffffff, #dbe6ff)",
-                border: "1px solid rgba(15,23,42,0.16)",
-                boxShadow: "0 10px 22px rgba(15,23,42,0.14)",
-              }}
-            />
+        {result ? (
+          <div className="notice" style={{ marginTop: 12 }}>
+            {result.hit ? `+${fmtBigintString(result.coins)} Coins` : "Промах"}
           </div>
+        ) : null}
 
-          {/* Result notice */}
-          {result ? (
-            <div className="notice" style={{ marginTop: 12 }}>
-              {result.hit ? `Попадание! +${fmtBigintString(result.coins)} Coins` : "Промах. Сложность сброшена."}
-            </div>
-          ) : (
-            <div className="muted" style={{ marginTop: 10, fontWeight: 700, fontSize: 12, textAlign: "center" }}>
-              Подсказка: лучше стрелять ближе к центру зелёной зоны.
-            </div>
-          )}
+        <button className="btn btnPrimary bigAction" disabled={busy || !session} onClick={fire} style={{ marginTop: 14 }}>
+          ОГОНЬ
+        </button>
 
-          {/* Primary actions */}
-          <button
-            className="btn btnPrimary bigAction"
-            disabled={busy || !session}
-            onClick={fire}
-            style={{ marginTop: 14 }}
-          >
-            ОГОНЬ
+        <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
+          <button className="btn btnSoft" disabled={busy} onClick={startAttempt}>
+            Новая попытка
+          </button>
+          <button className="btn btnSoft" disabled={busy} onClick={() => nav("/wallet")}>
+            Кошелёк
+          </button>
+          <button className="btn btnGreen" disabled={busy} onClick={buyBoost} style={{ width: "100%" }}>
+            Буст • 🔷 1 TON
           </button>
 
-          <div style={{ display: "grid", gap: 10, marginTop: 12 }}>
-            <button className="btn btnSoft" disabled={busy} onClick={startAttempt}>
-              Новая попытка
+          {user.isAdmin ? (
+            <button className="btn btnSoft" disabled={busy} onClick={adminFillEnergy} style={{ width: "100%" }}>
+              (ADMIN) Энергия 100
             </button>
-
-            <button className="btn btnSoft" disabled={busy} onClick={() => nav("/wallet")}>
-              Кошелёк / Буст
-            </button>
-
-            <button
-              className="btn btnPrimary"
-              disabled={busy || !boostReady}
-              onClick={() =>
-                setOverlay({
-                  title: "Оплата TON (тест)",
-                  text: "Покупки за TON делаются через TonConnect. Пока стоит заглушка: можно симулировать успешную оплату и получить 100 энергии.",
-                })
-              }
-              style={{ width: "100%" }}
-            >
-              Купить буст • 🔷 1 TON
-            </button>
-
-            {!boostReady ? (
-              <div className="muted" style={{ fontSize: 12, fontWeight: 700, textAlign: "center" }}>
-                Буст на кулдауне. Попробуй позже.
-              </div>
-            ) : null}
-
-            {user.isAdmin ? (
-              <button
-                className="btn btnGreen"
-                disabled={busy}
-                onClick={adminFillEnergy}
-                style={{ width: "100%" }}
-              >
-                (ADMIN) Пополнить энергию до 100
-              </button>
-            ) : null}
-          </div>
+          ) : null}
         </div>
       </div>
 
@@ -371,33 +285,8 @@ export default function Shoot() {
           text={overlay.text}
           onClose={() => setOverlay(null)}
           action={
-            overlay.title === "Оплата TON (тест)"
-              ? {
-                  label: "Симулировать успех",
-                  onClick: () => {
-                    setOverlay(null);
-                    void buyBoost();
-                  },
-                }
-              : overlay.title === "Нет энергии"
-                ? {
-                    label: "Купить буст",
-                    onClick: () => {
-                      setOverlay(null);
-                      void buyBoost();
-                    },
-                  }
-                : undefined
-          }
-          secondaryAction={
-            overlay.title === "Оплата TON (тест)"
-              ? {
-                  label: "Симулировать ошибку",
-                  onClick: () => {
-                    setOverlay(null);
-                    setOverlay({ title: "Оплата отменена", text: "Симуляция: платеж не прошёл." });
-                  },
-                }
+            overlay.title === "Нет энергии"
+              ? { label: "Купить буст", onClick: () => { setOverlay(null); void buyBoost(); } }
               : undefined
           }
         />

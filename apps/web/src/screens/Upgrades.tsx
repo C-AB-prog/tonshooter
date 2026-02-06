@@ -33,36 +33,21 @@ export default function Upgrades() {
     try {
       const next = which === "weapon" ? u.weaponLevel + 1 : u.rangeLevel + 1;
 
-      // Level 5 is a TON purchase (real payment). For now we show a mock payment modal.
       if (next === 5) {
         setPendingTon({ which });
-        setOverlay({
-          title: "Оплата TON (тест)",
-          text: "Улучшение 5 уровня покупается за 2 TON через TonConnect. Сейчас стоит заглушка: можно симулировать успешный платёж.",
-        });
+        setOverlay({ title: "Оплата TON", text: "Уровень 5 — 2 TON (пока симуляция)." });
         return;
       }
 
       await apiFetch("/upgrade", { token, body: { which } });
       await refresh();
     } catch (e: any) {
-      if (e?.code === "upgrade_blocked")
-        setOverlay({ title: "Улучшение недоступно", text: e.payload?.reason ?? "Причина неизвестна" });
-      else if (e?.code === "not_enough_coins")
-        setOverlay({ title: "Не хватает Coins", text: "Нужно больше Coins для улучшения." });
-      else if (e?.code === "not_enough_ton")
-        setOverlay({ title: "Не хватает TON", text: "Для 5 уровня нужно 2 TON." });
-      else setOverlay({ title: "Ошибка сервера", text: "Попробуй ещё раз позже." });
+      if (e?.code === "upgrade_blocked") setOverlay({ title: "Недоступно", text: e.payload?.reason ?? "blocked" });
+      else if (e?.code === "not_enough_coins") setOverlay({ title: "Не хватает Coins", text: "Нужно больше Coins." });
+      else if (e?.code === "not_enough_ton") setOverlay({ title: "Не хватает TON", text: "Нужно 2 TON." });
+      else setOverlay({ title: "Ошибка", text: "Попробуй позже." });
     }
   }
-
-  const wNext = user.weaponLevel + 1;
-  const rNext = user.rangeLevel + 1;
-  const wPrice = PRICE[user.weaponLevel] ?? 0;
-  const rPrice = PRICE[user.rangeLevel] ?? 0;
-
-  const wUsesTon = wNext === 5;
-  const rUsesTon = rNext === 5;
 
   async function confirmTonPurchase() {
     if (!pendingTon) return;
@@ -74,102 +59,65 @@ export default function Upgrades() {
         await tonConnectPay(purchase as any, tok);
       }
       await refresh();
-      setOverlay({
-        title: "Готово",
-        text: getTonPayMode() === "mock" ? "Улучшение куплено (mock)." : "Улучшение куплено за TON.",
-      });
+      setOverlay({ title: "Готово", text: "Улучшение куплено." });
     } catch (e: any) {
       const code = e?.code;
-      if (code === "upgrade_blocked") setOverlay({ title: "Улучшение недоступно", text: e.payload?.reason ?? "blocked" });
-      else if (code === "mock_disabled") setOverlay({ title: "Отключено", text: "На сервере выключен mock-режим оплаты." });
-      else if (code === "invalid_level") setOverlay({ title: "Неверный уровень", text: e?.message ?? "invalid" });
+      if (code === "mock_disabled") setOverlay({ title: "Отключено", text: "Mock выключен." });
       else setOverlay({ title: "Ошибка", text: code ?? "ton_purchase_failed" });
     } finally {
       setPendingTon(null);
     }
   }
 
+  const wNext = user.weaponLevel + 1;
+  const rNext = user.rangeLevel + 1;
+  const wPrice = PRICE[user.weaponLevel] ?? 0;
+  const rPrice = PRICE[user.rangeLevel] ?? 0;
+
+  const wUsesTon = wNext === 5;
+  const rUsesTon = rNext === 5;
+
   const wDisabled = user.weaponLevel >= 10;
   const rDisabled = user.rangeLevel >= 10;
 
   return (
     <div className="safe col">
-      {/* Header */}
-      <div className="card" style={{ padding: 14 }}>
-        <div className="h2">Улучшения</div>
-        <div className="muted" style={{ marginTop: 6, fontWeight: 700, fontSize: 13 }}>
-          Держи баланс: |WeaponLevel - RangeLevel| ≤ 3
-        </div>
+      <h1 className="h1">Улучшения</h1>
 
-        <div className="notice" style={{ marginTop: 12 }}>
-          Подсказка: 5 уровень покупается за TON. Остальные — за Coins.
-        </div>
-      </div>
-
-      {/* Cards */}
       <div className="row" style={{ alignItems: "stretch" }}>
-        {/* Weapon */}
         <div className="card upgradeCard" style={{ flex: 1 }}>
           <div className="cardHead">
-            <div>
-              <div className="cardTitle">Оружие</div>
-              <div className="muted" style={{ marginTop: 4, fontSize: 13, fontWeight: 700 }}>
-                Следующий: {wDisabled ? "—" : wNext}
-              </div>
-            </div>
+            <div className="cardTitle">Оружие</div>
             <span className="pill">Ур. {user.weaponLevel}</span>
           </div>
-
           <div className="imgStub">WEAPON</div>
-
           <button
             className={`btn ${wDisabled ? "btnSoft" : (wUsesTon ? "btnPrimary" : "btnGreen")}`}
             disabled={wDisabled}
             onClick={() => upgrade("weapon")}
             style={{ width: "100%" }}
           >
-            {wDisabled ? (
-              "Макс. уровень"
-            ) : (
-              <>
-                Улучшить • {wUsesTon ? "🔷 2 TON" : `🪙 ${fmt(String(wPrice))}`}
-              </>
-            )}
+            {wDisabled ? "Макс" : `Улучшить • ${wUsesTon ? "🔷 2 TON" : `🪙 ${fmt(String(wPrice))}`}`}
           </button>
         </div>
 
-        {/* Range */}
         <div className="card upgradeCard" style={{ flex: 1 }}>
           <div className="cardHead">
-            <div>
-              <div className="cardTitle">Полигон</div>
-              <div className="muted" style={{ marginTop: 4, fontSize: 13, fontWeight: 700 }}>
-                Следующий: {rDisabled ? "—" : rNext}
-              </div>
-            </div>
+            <div className="cardTitle">Полигон</div>
             <span className="pill">Ур. {user.rangeLevel}</span>
           </div>
-
           <div className="imgStub">RANGE</div>
-
           <button
             className={`btn ${rDisabled ? "btnSoft" : (rUsesTon ? "btnPrimary" : "btnGreen")}`}
             disabled={rDisabled}
             onClick={() => upgrade("range")}
             style={{ width: "100%" }}
           >
-            {rDisabled ? (
-              "Макс. уровень"
-            ) : (
-              <>
-                Улучшить • {rUsesTon ? "🔷 2 TON" : `🪙 ${fmt(String(rPrice))}`}
-              </>
-            )}
+            {rDisabled ? "Макс" : `Улучшить • ${rUsesTon ? "🔷 2 TON" : `🪙 ${fmt(String(rPrice))}`}`}
           </button>
         </div>
       </div>
 
-      {/* Overlay */}
       {overlay ? (
         <Overlay
           title={overlay.title}
@@ -179,25 +127,13 @@ export default function Upgrades() {
             setPendingTon(null);
           }}
           action={
-            overlay.title === "Оплата TON (тест)"
-              ? {
-                  label: "Симулировать успех",
-                  onClick: () => {
-                    setOverlay(null);
-                    void confirmTonPurchase();
-                  },
-                }
+            overlay.title === "Оплата TON"
+              ? { label: "Симулировать успех", onClick: () => { setOverlay(null); void confirmTonPurchase(); } }
               : undefined
           }
           secondaryAction={
-            overlay.title === "Оплата TON (тест)"
-              ? {
-                  label: "Симулировать ошибку",
-                  onClick: () => {
-                    setOverlay({ title: "Оплата отменена", text: "Симуляция: платёж не прошёл." });
-                    setPendingTon(null);
-                  },
-                }
+            overlay.title === "Оплата TON"
+              ? { label: "Симулировать ошибку", onClick: () => { setOverlay({ title: "Отменено", text: "Платёж не прошёл." }); setPendingTon(null); } }
               : undefined
           }
         />

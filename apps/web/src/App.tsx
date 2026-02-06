@@ -35,9 +35,7 @@ export default function App() {
   if (booting) {
     return (
       <div className="safe">
-        <div className="card" style={{ padding: 14, fontWeight: 800 }}>
-          Загрузка…
-        </div>
+        <div className="card" style={{ padding: 14, fontWeight: 800 }}>Загрузка…</div>
       </div>
     );
   }
@@ -47,12 +45,10 @@ export default function App() {
       <div className="safe col">
         <div className="card" style={{ padding: 14 }}>
           <div className="h2">Вход</div>
-          <div className="muted" style={{ marginTop: 6, fontWeight: 600 }}>
-            Не удалось авторизоваться: {error ?? "unknown"}
-          </div>
           <button className="btn btnPrimary" style={{ width: "100%", marginTop: 12 }} onClick={() => login()}>
             Повторить
           </button>
+          {error ? <div className="muted" style={{ marginTop: 10, fontWeight: 700, fontSize: 12 }}>{String(error)}</div> : null}
         </div>
       </div>
     );
@@ -62,26 +58,19 @@ export default function App() {
 
   return (
     <div>
-      {/* Global header only on Home (UI-only decision) */}
       {isHome ? (
         <div className="safe col" style={{ paddingBottom: 12 }}>
           {user ? (
             <>
               <TopCard user={user} />
               <EnergyBar user={user} />
-              {user.isBotBlocked ? (
-                <div className="notice">Подозрение на бота. Некоторые действия могут быть заблокированы.</div>
-              ) : null}
             </>
           ) : (
-            <div className="card" style={{ padding: 14, fontWeight: 800 }}>
-              Загрузка профиля…
-            </div>
+            <div className="card" style={{ padding: 14, fontWeight: 800 }}>…</div>
           )}
         </div>
       ) : null}
 
-      {/* Screen content */}
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/shoot" element={<Shoot />} />

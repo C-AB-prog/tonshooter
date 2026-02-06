@@ -1,10 +1,7 @@
 import React, { useEffect } from "react";
 import "../styles/components.css";
 
-type OverlayAction = {
-  label: string;
-  onClick: () => void;
-};
+type OverlayAction = { label: string; onClick: () => void };
 
 export function Overlay({
   title,
@@ -38,12 +35,7 @@ export function Overlay({
             </div>
           </div>
 
-          <button
-            className="btn btnSoft"
-            onClick={onClose}
-            style={{ width: 44, minWidth: 44, padding: 0, borderRadius: 14 }}
-            aria-label="Закрыть"
-          >
+          <button className="btn btnSoft" onClick={onClose} style={{ width: 44, minWidth: 44, padding: 0, borderRadius: 14 }} aria-label="Закрыть">
             ✕
           </button>
         </div>
