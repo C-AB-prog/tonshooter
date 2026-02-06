@@ -11,19 +11,23 @@ const tabs = [
 
 export function BottomNav() {
   return (
-    <div className="bottomNav">
-      <div className="bottomNavInner">
+    <nav className="bottomNav" aria-label="Навигация">
+      <div className="bottomNavInner" role="navigation">
         {tabs.map((t) => (
           <NavLink
             key={t.to}
             to={t.to}
+            end={t.to === "/"}
+            aria-label={t.label}
             className={({ isActive }) => `navItem ${isActive ? "navItemActive" : ""}`}
           >
-            <div className="navIcon">{t.icon}</div>
+            <div className="navIcon" aria-hidden>
+              {t.icon}
+            </div>
             <div>{t.label}</div>
           </NavLink>
         ))}
       </div>
-    </div>
+    </nav>
   );
 }

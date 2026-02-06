@@ -33,7 +33,13 @@ export default function App() {
   }, []);
 
   if (booting) {
-    return <div className="safe"><div className="card" style={{ padding: 14, fontWeight: 800 }}>Загрузка…</div></div>;
+    return (
+      <div className="safe">
+        <div className="card" style={{ padding: 14, fontWeight: 800 }}>
+          Загрузка…
+        </div>
+      </div>
+    );
   }
 
   if (!token) {
@@ -52,26 +58,31 @@ export default function App() {
     );
   }
 
+  const isHome = loc.pathname === "/";
+
   return (
     <div>
-      <div className="safe col" style={{ paddingBottom: 12 }}>
-        {user ? (
-          <>
-            <TopCard user={user} />
-            <EnergyBar user={user} />
-            {user.isBotBlocked ? (
-              <div className="notice">
-                Подозрение на бота. Некоторые действия могут быть заблокированы.
-              </div>
-            ) : null}
-          </>
-        ) : (
-          <div className="card" style={{ padding: 14, fontWeight: 800 }}>Загрузка профиля…</div>
-        )}
-      </div>
+      {/* Global header only on Home (UI-only decision) */}
+      {isHome ? (
+        <div className="safe col" style={{ paddingBottom: 12 }}>
+          {user ? (
+            <>
+              <TopCard user={user} />
+              <EnergyBar user={user} />
+              {user.isBotBlocked ? (
+                <div className="notice">Подозрение на бота. Некоторые действия могут быть заблокированы.</div>
+              ) : null}
+            </>
+          ) : (
+            <div className="card" style={{ padding: 14, fontWeight: 800 }}>
+              Загрузка профиля…
+            </div>
+          )}
+        </div>
+      ) : null}
 
       {/* Screen content */}
-      <Routes location={loc}>
+      <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/shoot" element={<Shoot />} />
         <Route path="/upgrades" element={<Upgrades />} />
