@@ -1,0 +1,47 @@
+
+> dev
+> npm --workspace apps/api run dev & npm --workspace apps/web run dev
+
+
+> dev
+> vite
+
+
+> dev
+> tsx watch src/index.ts
+
+
+  VITE v5.4.21  ready in 352 ms
+
+  ➜  Local:   http://localhost:5173/
+  ➜  Network: http://10.0.1.26:5173/
+  ➜  Network: http://172.18.0.1:5173/
+  ➜  press h + enter to show help
+/workspaces/tonshooter/apps/api/src/routes.ts:5
+import { verifyTelegramInitData, parseTelegramUser, parseStartParam } from "./telegramAuth.js";
+                                                    ^
+SyntaxError: The requested module './telegramAuth.js' does not provide an export named 'parseStartParam'
+    at #_instantiate (node:internal/modules/esm/module_job:254:21)
+    at async ModuleJob.run (node:internal/modules/esm/module_job:369:5)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:671:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.11.1
+8:43:02 PM [vite] http proxy error: /api/auth/telegram
+Error: connect ECONNREFUSED 127.0.0.1:4000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+8:43:02 PM [vite] http proxy error: /api/auth/telegram
+Error: connect ECONNREFUSED 127.0.0.1:4000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+8:43:04 PM [vite] http proxy error: /api/auth/telegram
+Error: connect ECONNREFUSED 127.0.0.1:4000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+8:43:14 PM [vite] http proxy error: /api/auth/telegram
+Error: connect ECONNREFUSED 127.0.0.1:4000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+8:43:14 PM [vite] http proxy error: /api/auth/telegram
+Error: connect ECONNREFUSED 127.0.0.1:4000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)
+8:43:17 PM [vite] http proxy error: /api/auth/telegram
+Error: connect ECONNREFUSED 127.0.0.1:4000
+    at TCPConnectWrap.afterConnect [as oncomplete] (node:net:1637:16)

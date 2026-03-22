@@ -1,0 +1,34 @@
+# API env (apps/api)
+PORT=4001
+CORS_ORIGIN=*
+
+# REQUIRED
+# Токен бота из BotFather (именно того бота, через которого открываешь Mini App)
+BOT_TOKEN=8569538764:AAGFQ1oWagbRT3h0mSW76VZVkmnXXx_ev1Y
+
+# Любая длинная случайная строка (можно сгенерить: openssl rand -hex 32)
+JWT_SECRET=Y2n9fKp7Qm4vR1s8T5x3Z6c0A9b2D7e1H4j8L0n5P3u6W9y2G7k1M8q4S0t6
+
+# TG userId админов через запятую (без пробелов можно)
+ADMIN_IDS=955974106
+
+# Postgres (docker compose exposes 5433 -> 5432)
+DATABASE_URL="postgresql://tonshooter:tonshooter@localhost:5433/tonshooter?schema=public"
+
+# Optional dev helpers
+# ДОЛЖНО БЫТЬ 0 в боевом режиме, чтобы initData проверялся по-настоящему
+DEV_BYPASS_TG=0
+
+# Разрешить мок TON (для тестов, без TonConnect)
+ALLOW_MOCK_TON=1
+
+# TON settings
+TON_NETWORK=testnet
+TON_RECEIVER_ADDRESS=
+TONCENTER_API_KEY=
+
+# Optional economy/antibot (можно не трогать — есть дефолты)
+DEV_FEE_BPS=200
+REFERRAL_DAILY_CAP=10
+ANTIBOT_MIN_ACTION_MS=120
+ANTIBOT_SUSPICION_THRESHOLD=8
